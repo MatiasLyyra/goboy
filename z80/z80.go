@@ -7,15 +7,7 @@ type CPUMemory interface {
 
 type CPU struct {
 	// General purpose registers
-	A     uint8
-	FSign bool
-	FZero bool
-	// F5 Not in use
-	FHalfCarry bool
-	// F3 Not in use
-	FParityOverflow bool
-	FSub            bool
-	FCarry          bool
+	A uint8
 
 	B uint8
 	C uint8
@@ -26,14 +18,22 @@ type CPU struct {
 	H uint8
 	L uint8
 
+	// Flag registers
+	FZero      bool
+	FHalfCarry bool
+	FSub       bool
+	FCarry     bool
+
 	// Special purpose registers
-	I  uint8
-	R  uint8
-	IX uint16
-	IY uint16
+	// I  uint8
+	// R  uint8
+	// IX uint16
+	// IY uint16
 	SP uint16
 	PC uint16
 
+	// Misc
+	Halt   bool
 	Memory CPUMemory
 }
 
