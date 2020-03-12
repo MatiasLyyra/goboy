@@ -1,6 +1,4 @@
-package z80
-
-import "os"
+package goboy
 
 // MicroCodeFunc executes single instructions
 type MicroCodeFunc func(cpu *CPU) int
@@ -9,6 +7,8 @@ type MicroCodeFunc func(cpu *CPU) int
 var InstructionsTable [256]MicroCodeFunc
 
 func init() {
+	// TODO: Clean duplicate instructions into a function and combine them
+	// like with
 	InstructionsTable = [256]MicroCodeFunc{
 		// 0x00: NOP
 		// Do nothing
@@ -149,7 +149,7 @@ func init() {
 		func(cpu *CPU) int {
 			cpu.PC++
 			// TODO: Something better than just os.Exit...
-			os.Exit(0)
+			// fmt.Printf("exited at %x\n", cpu.PC)
 			return 4
 		},
 		// 0x11: LD DE, d16
@@ -361,23 +361,23 @@ func init() {
 		func(cpu *CPU) int {
 			temp := int(cpu.A)
 			if !cpu.FSub {
-				if cpu.FHalfCarry || (temp&0xf) > 9 {
+				if cpu.FHalfCarry || temp&0xf > 9 {
 					temp += 6
 				}
-				if cpu.FCarry || (temp>>4) > 9 {
+				if cpu.FCarry || temp > 0x9F {
 					temp += 0x60
 					cpu.FCarry = true
 				}
 			} else {
 				if cpu.FHalfCarry {
-					temp = (temp - 6) & 0xff
+					temp -= 6
 				}
 				if cpu.FCarry {
-					temp = (temp - 0x60) & 0xff
+					temp -= 0x60
 				}
 			}
 			cpu.FHalfCarry = false
-			cpu.FZero = temp == 0
+			cpu.FZero = temp&0xff == 0
 			cpu.A = uint8(temp)
 			return 4
 		},
@@ -1694,7 +1694,9 @@ func init() {
 		},
 		// 0xCB: CB Prefix
 		func(cpu *CPU) int {
-			return 4
+			cycles := CBInstructionsTable[cpu.Memory.Read(cpu.PC)](cpu)
+			cpu.PC++
+			return cycles
 		},
 		// 0xCC: CALL Z, a16
 		func(cpu *CPU) int {
@@ -1718,7 +1720,7 @@ func init() {
 			cpu.PC = uint16(cpu.Memory.Read(cpu.PC+1))<<8 | uint16(cpu.Memory.Read(cpu.PC))
 			return 24
 		},
-		// 0x8E: ADC A, d8
+		// 0xCE: ADC A, d8
 		func(cpu *CPU) int {
 			var carry uint16
 			if cpu.FCarry {
@@ -2006,7 +2008,7 @@ func init() {
 		},
 		// 0xF3: DI
 		func(cpu *CPU) int {
-			cpu.IntDisabled = true
+			cpu.EI = false
 			return 4
 		},
 		// 0xE4: NOP
@@ -2061,7 +2063,7 @@ func init() {
 		},
 		// 0xFB: EI
 		func(cpu *CPU) int {
-			cpu.IntDisabled = false
+			cpu.EI = true
 			return 4
 		},
 		// 0xFC: NOP

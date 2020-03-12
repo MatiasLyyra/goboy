@@ -1,10 +1,4 @@
-package z80
-
-// CPUMemory is an interface for cpu to communicate with external devices (RAM, display etc.)
-type CPUMemory interface {
-	Read(addr uint16) uint8
-	Write(addr uint16, data uint8)
-}
+package goboy
 
 // CPU represents internal state of the z80 cpu
 type CPU struct {
@@ -35,9 +29,16 @@ type CPU struct {
 	PC uint16
 
 	// Misc
-	Halt        bool
-	IntDisabled bool
-	Memory      CPUMemory
+	Halt   bool
+	EI     bool
+	Memory Memory
+}
+
+func (cpu *CPU) RunSingleOpcode() int {
+	opcode := cpu.Memory.Read(cpu.PC)
+	// fmt.Println(InstructionStrings[opcode])
+	cpu.PC++
+	return InstructionsTable[opcode](cpu)
 }
 
 // F returns flags as uint8
