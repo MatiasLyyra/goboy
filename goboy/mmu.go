@@ -6,6 +6,31 @@ type Memory interface {
 	Write(addr uint16, data uint8)
 }
 
+const (
+	VBlankInt = iota
+	LCDStatInt
+	TimerInt
+	SerialInt
+	JoypadInt
+)
+
+const (
+	AddrLCDC     = 0xFF40
+	AddrLCDCStat = 0xFF41
+	AddrSCY      = 0xFF42
+	AddrSCX      = 0xFF43
+	AddrLY       = 0xFF44
+	AddrLYC      = 0xFF45
+	AddrWY       = 0xFF4A
+	AddrWX       = 0xFF4B
+	AddrBGP      = 0xFF47
+	AddrOBP0     = 0xFF48
+	AddrOBP1     = 0xFF49
+	AddrDMA      = 0xFF46
+	AddrIE       = 0xFFFF
+	AddrIF       = 0xFF0F
+)
+
 // Defines different memory boundaries for Gameboy
 const (
 	// ROM
@@ -35,64 +60,65 @@ const (
 	IOPortsStart = 0xFF00
 	IOPortsEnd   = 0xFF7F
 
-	ROMBankSize = ROMBankEnd - ROMBankStart + 1
-	RAMBankSize = ExtRAMEnd - ExtRAMStart + 1
+	ROMBankSize  = ROMBankEnd - ROMBankStart + 1
+	RAMBankSize  = ExtRAMEnd - ExtRAMStart + 1
+	VideoRAMSize = VideoRAMEnd - VideoRAMStart + 1
+	OAMSize      = OAMEnd - OAMStart + 1
 )
 
 type MMU struct {
-	ROM     Memory
-	GPU     Memory
-	WRAM    Memory
-	HRAM    Memory
-	IOPorts Memory
+	Cartridge Memory
+	GPU       Memory
+	WRAM      Memory
+	HRAM      Memory
+	registers map[uint16]MemoryRegister
 }
 
 func (mmu *MMU) Read(addr uint16) uint8 {
+	if reg, found := mmu.registers[addr]; found {
+		return reg.Get()
+	}
 	switch {
 	case ROMStart <= addr && addr <= ROMBankEnd:
-		return mmu.ROM.Read(addr)
+		return mmu.Cartridge.Read(addr)
 	case VideoRAMStart <= addr && addr <= VideoRAMEnd:
 		return mmu.GPU.Read(addr)
 	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
-		return mmu.ROM.Read(addr)
+		return mmu.Cartridge.Read(addr)
 	case WRAMStart <= addr && addr <= EchoEnd:
 		return mmu.WRAM.Read(addr)
 	case OAMStart <= addr && addr <= OAMEnd:
 		return mmu.GPU.Read(addr)
-	case IOPortsStart <= addr && addr <= IOPortsEnd:
-		return mmu.IOPorts.Read(addr)
+	// case IOPortsStart <= addr && addr <= IOPortsEnd:
+	// 	return mmu.IOPorts.Read(addr)
 	case HRAMStart <= addr && addr <= HRAMEnd:
 		return mmu.HRAM.Read(addr)
 	case addr == 0xFFFF:
 	}
-	panic("Invalid addr")
+	return 0x0
 }
 
 func (mmu *MMU) Write(addr uint16, data uint8) {
-	switch {
-	case ROMStart <= addr && addr <= ROMBankEnd:
-		mmu.ROM.Write(addr, data)
-		return
-	case VideoRAMStart <= addr && addr <= VideoRAMEnd:
-		mmu.GPU.Write(addr, data)
-		return
-	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
-		mmu.ROM.Write(addr, data)
-		return
-	case WRAMStart <= addr && addr <= EchoEnd:
-		mmu.WRAM.Write(addr, data)
-		return
-	case OAMStart <= addr && addr <= OAMEnd:
-		mmu.GPU.Write(addr, data)
-		return
-	case IOPortsStart <= addr && addr <= IOPortsEnd:
-		mmu.IOPorts.Write(addr, data)
-		return
-	case HRAMStart <= addr && addr <= HRAMEnd:
-		mmu.HRAM.Write(addr, data)
-		return
-	case addr == 0xFFFF:
+	if reg, found := mmu.registers[addr]; found {
+		reg.Set(data)
 		return
 	}
-	panic("Invalid addr")
+	switch {
+	case ROMStart <= addr && addr <= ROMBankEnd:
+		mmu.Cartridge.Write(addr, data)
+	case VideoRAMStart <= addr && addr <= VideoRAMEnd:
+		mmu.GPU.Write(addr, data)
+	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
+		mmu.Cartridge.Write(addr, data)
+	case WRAMStart <= addr && addr <= EchoEnd:
+		mmu.WRAM.Write(addr, data)
+	case OAMStart <= addr && addr <= OAMEnd:
+		mmu.GPU.Write(addr, data)
+	case HRAMStart <= addr && addr <= HRAMEnd:
+		mmu.HRAM.Write(addr, data)
+	}
+}
+
+func (mmu *MMU) Apply(addr uint16, reg MemoryRegister) {
+	mmu.registers[addr] = reg
 }

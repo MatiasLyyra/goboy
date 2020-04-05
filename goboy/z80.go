@@ -21,10 +21,6 @@ type CPU struct {
 	FCarry     bool
 
 	// Special purpose registers
-	// I  uint8
-	// R  uint8
-	// IX uint16
-	// IY uint16
 	SP uint16
 	PC uint16
 

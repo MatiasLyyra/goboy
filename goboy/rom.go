@@ -223,12 +223,12 @@ func (code DestinationCode) String() string {
 	}
 }
 
-type ROM struct {
+type Cartridge struct {
 	Bank0 [ROMBankSize]byte
 	MBC   Memory
 }
 
-func (r *ROM) String() string {
+func (r *Cartridge) String() string {
 	return fmt.Sprintf(
 		`Title: %v
 GB Mode: %v
@@ -240,8 +240,8 @@ Destination code: %v`,
 	)
 }
 
-func LoadROM(r io.Reader) (*ROM, error) {
-	rom := ROM{}
+func LoadCartridge(r io.Reader) (*Cartridge, error) {
+	rom := Cartridge{}
 	// TODO: Error handling
 	r.Read(rom.Bank0[:])
 	switch rom.Cartridge() {
@@ -257,14 +257,14 @@ func LoadROM(r io.Reader) (*ROM, error) {
 	return &rom, nil
 }
 
-func (rom *ROM) Read(addr uint16) uint8 {
+func (rom *Cartridge) Read(addr uint16) uint8 {
 	if addr <= ROMEnd {
 		return rom.Bank0[addr]
 	}
 	return rom.MBC.Read(addr)
 }
 
-func (rom *ROM) Title() string {
+func (rom *Cartridge) Title() string {
 	titleBytes := rom.Bank0[0x134:0x144]
 	title := ""
 	for _, titleByte := range titleBytes {
@@ -277,7 +277,7 @@ func (rom *ROM) Title() string {
 	return title
 }
 
-func (r *ROM) GCBFlag() CGB {
+func (r *Cartridge) GCBFlag() CGB {
 	flag := CGB(r.Bank0[0x143])
 	if flag == NonCGB || flag == OnlyCGB {
 		return flag
@@ -285,18 +285,18 @@ func (r *ROM) GCBFlag() CGB {
 	return GB
 }
 
-func (r *ROM) Cartridge() CartrigeType {
+func (r *Cartridge) Cartridge() CartrigeType {
 	return CartrigeType(r.Bank0[0x147])
 }
 
-func (r *ROM) ROMBanks() ROMBanks {
+func (r *Cartridge) ROMBanks() ROMBanks {
 	return ROMBanks(r.Bank0[0x148])
 }
 
-func (r *ROM) ExtRAMBanks() ExtRAMBanks {
+func (r *Cartridge) ExtRAMBanks() ExtRAMBanks {
 	return ExtRAMBanks(r.Bank0[0x148])
 }
 
-func (r *ROM) DestinationCode() DestinationCode {
+func (r *Cartridge) DestinationCode() DestinationCode {
 	return DestinationCode(r.Bank0[0x14A])
 }

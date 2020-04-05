@@ -108,12 +108,12 @@ func testBit(val, bit uint8, cpu *CPU) {
 	cpu.FHalfCarry = true
 }
 
-func resetBit(val, bit uint8, cpu *CPU) uint8 {
+func resetBit(val, bit uint8) uint8 {
 	mask := uint8(^(1 << bit))
 	return mask & val
 }
 
-func setBit(val, bit uint8, cpu *CPU) uint8 {
+func setBit(val, bit uint8) uint8 {
 	return val | (1 << bit)
 }
 
@@ -788,681 +788,681 @@ func init() {
 		},
 		// 0x80: RES 0, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 0, cpu)
+			cpu.B = resetBit(cpu.B, 0)
 			return 8
 		},
 		// 0x81: RES 0, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 0, cpu)
+			cpu.C = resetBit(cpu.C, 0)
 			return 8
 		},
 		// 0x82: RES 0, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 0, cpu)
+			cpu.D = resetBit(cpu.D, 0)
 			return 8
 		},
 		// 0x83: RES 0, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 0, cpu)
+			cpu.E = resetBit(cpu.E, 0)
 			return 8
 		},
 		// 0x84: RES 0, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 0, cpu)
+			cpu.H = resetBit(cpu.H, 0)
 			return 8
 		},
 		// 0x85: RES 0, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 0, cpu)
+			cpu.L = resetBit(cpu.L, 0)
 			return 8
 		},
 		// 0x86: RES 0, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 0, cpu)
+			val = resetBit(val, 0)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0x87: RES 0, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 0, cpu)
+			cpu.A = resetBit(cpu.A, 0)
 			return 16
 		},
 		// 0x88: RES 1, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 1, cpu)
+			cpu.B = resetBit(cpu.B, 1)
 			return 8
 		},
 		// 0x89: RES 1, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 1, cpu)
+			cpu.C = resetBit(cpu.C, 1)
 			return 8
 		},
 		// 0x8A: RES 1, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 1, cpu)
+			cpu.D = resetBit(cpu.D, 1)
 			return 8
 		},
 		// 0x8B: RES 1, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 1, cpu)
+			cpu.E = resetBit(cpu.E, 1)
 			return 8
 		},
 		// 0x8C: RES 1, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 1, cpu)
+			cpu.H = resetBit(cpu.H, 1)
 			return 8
 		},
 		// 0x8D: RES 1, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 1, cpu)
+			cpu.L = resetBit(cpu.L, 1)
 			return 8
 		},
 		// 0x8E: RES 1, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 1, cpu)
+			val = resetBit(val, 1)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0x8F: RES 1, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 1, cpu)
+			cpu.A = resetBit(cpu.A, 1)
 			return 16
 		},
 
 		// 0x90: RES 2, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 2, cpu)
+			cpu.B = resetBit(cpu.B, 2)
 			return 8
 		},
 		// 0x91: RES 2, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 2, cpu)
+			cpu.C = resetBit(cpu.C, 2)
 			return 8
 		},
 		// 0x92: RES 2, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 2, cpu)
+			cpu.D = resetBit(cpu.D, 2)
 			return 8
 		},
 		// 0x93: RES 2, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 2, cpu)
+			cpu.E = resetBit(cpu.E, 2)
 			return 8
 		},
 		// 0x94: RES 2, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 2, cpu)
+			cpu.H = resetBit(cpu.H, 2)
 			return 8
 		},
 		// 0x95: RES 2, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 2, cpu)
+			cpu.L = resetBit(cpu.L, 2)
 			return 8
 		},
 		// 0x96: RES 2, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 2, cpu)
+			val = resetBit(val, 2)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0x97: RES 2, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 2, cpu)
+			cpu.A = resetBit(cpu.A, 2)
 			return 16
 		},
 		// 0x98: RES 3, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 3, cpu)
+			cpu.B = resetBit(cpu.B, 3)
 			return 8
 		},
 		// 0x99: RES 3, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 3, cpu)
+			cpu.C = resetBit(cpu.C, 3)
 			return 8
 		},
 		// 0x9A: RES 3, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 3, cpu)
+			cpu.D = resetBit(cpu.D, 3)
 			return 8
 		},
 		// 0x9B: RES 3, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 3, cpu)
+			cpu.E = resetBit(cpu.E, 3)
 			return 8
 		},
 		// 0x9C: RES 3, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 3, cpu)
+			cpu.H = resetBit(cpu.H, 3)
 			return 8
 		},
 		// 0x9D: RES 3, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 3, cpu)
+			cpu.L = resetBit(cpu.L, 3)
 			return 8
 		},
 		// 0x9E: RES 3, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 3, cpu)
+			val = resetBit(val, 3)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0x9F: RES 3, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 3, cpu)
+			cpu.A = resetBit(cpu.A, 3)
 			return 16
 		},
 
 		// 0xA0: RES 4, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 4, cpu)
+			cpu.B = resetBit(cpu.B, 4)
 			return 8
 		},
 		// 0xA1: RES 4, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 4, cpu)
+			cpu.C = resetBit(cpu.C, 4)
 			return 8
 		},
 		// 0xA2: RES 4, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 4, cpu)
+			cpu.D = resetBit(cpu.D, 4)
 			return 8
 		},
 		// 0xA3: RES 4, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 4, cpu)
+			cpu.E = resetBit(cpu.E, 4)
 			return 8
 		},
 		// 0xA4: RES 4, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 4, cpu)
+			cpu.H = resetBit(cpu.H, 4)
 			return 8
 		},
 		// 0xA5: RES 4, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 4, cpu)
+			cpu.L = resetBit(cpu.L, 4)
 			return 8
 		},
 		// 0xA6: RES 4, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 4, cpu)
+			val = resetBit(val, 4)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xA7: RES 4, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 4, cpu)
+			cpu.A = resetBit(cpu.A, 4)
 			return 16
 		},
 		// 0xA8: RES 5, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 5, cpu)
+			cpu.B = resetBit(cpu.B, 5)
 			return 8
 		},
 		// 0xA9: RES 5, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 5, cpu)
+			cpu.C = resetBit(cpu.C, 5)
 			return 8
 		},
 		// 0xAA: RES 5, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 5, cpu)
+			cpu.D = resetBit(cpu.D, 5)
 			return 8
 		},
 		// 0xAB: RES 5, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 5, cpu)
+			cpu.E = resetBit(cpu.E, 5)
 			return 8
 		},
 		// 0xAC: RES 5, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 5, cpu)
+			cpu.H = resetBit(cpu.H, 5)
 			return 8
 		},
 		// 0xAD: RES 5, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 5, cpu)
+			cpu.L = resetBit(cpu.L, 5)
 			return 8
 		},
 		// 0xAE: RES 5, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 5, cpu)
+			val = resetBit(val, 5)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xAF: RES 5, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 5, cpu)
+			cpu.A = resetBit(cpu.A, 5)
 			return 16
 		},
 
 		// 0xB0: RES 6, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 6, cpu)
+			cpu.B = resetBit(cpu.B, 6)
 			return 8
 		},
 		// 0xB1: RES 6, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 6, cpu)
+			cpu.C = resetBit(cpu.C, 6)
 			return 8
 		},
 		// 0xB2: RES 6, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 6, cpu)
+			cpu.D = resetBit(cpu.D, 6)
 			return 8
 		},
 		// 0xB3: RES 6, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 6, cpu)
+			cpu.E = resetBit(cpu.E, 6)
 			return 8
 		},
 		// 0xB4: RES 6, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 6, cpu)
+			cpu.H = resetBit(cpu.H, 6)
 			return 8
 		},
 		// 0xB5: RES 6, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 6, cpu)
+			cpu.L = resetBit(cpu.L, 6)
 			return 8
 		},
 		// 0xB6: RES 6, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 6, cpu)
+			val = resetBit(val, 6)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xB7: RES 6, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 6, cpu)
+			cpu.A = resetBit(cpu.A, 6)
 			return 16
 		},
 		// 0xB8: RES 7, B
 		func(cpu *CPU) int {
-			cpu.B = resetBit(cpu.B, 7, cpu)
+			cpu.B = resetBit(cpu.B, 7)
 			return 8
 		},
 		// 0xB9: RES 7, C
 		func(cpu *CPU) int {
-			cpu.C = resetBit(cpu.C, 7, cpu)
+			cpu.C = resetBit(cpu.C, 7)
 			return 8
 		},
 		// 0xBA: RES 7, D
 		func(cpu *CPU) int {
-			cpu.D = resetBit(cpu.D, 7, cpu)
+			cpu.D = resetBit(cpu.D, 7)
 			return 8
 		},
 		// 0xBB: RES 7, E
 		func(cpu *CPU) int {
-			cpu.E = resetBit(cpu.E, 7, cpu)
+			cpu.E = resetBit(cpu.E, 7)
 			return 8
 		},
 		// 0xBC: RES 7, H
 		func(cpu *CPU) int {
-			cpu.H = resetBit(cpu.H, 7, cpu)
+			cpu.H = resetBit(cpu.H, 7)
 			return 8
 		},
 		// 0xBD: RES 7, L
 		func(cpu *CPU) int {
-			cpu.L = resetBit(cpu.L, 7, cpu)
+			cpu.L = resetBit(cpu.L, 7)
 			return 8
 		},
 		// 0xBE: RES 7, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = resetBit(val, 7, cpu)
+			val = resetBit(val, 7)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xBF: RES 7, A
 		func(cpu *CPU) int {
-			cpu.A = resetBit(cpu.A, 7, cpu)
+			cpu.A = resetBit(cpu.A, 7)
 			return 16
 		},
 
 		// 0xC0: SET 0, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 0, cpu)
+			cpu.B = setBit(cpu.B, 0)
 			return 8
 		},
 		// 0xC1: SET 0, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 0, cpu)
+			cpu.C = setBit(cpu.C, 0)
 			return 8
 		},
 		// 0xC2: SET 0, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 0, cpu)
+			cpu.D = setBit(cpu.D, 0)
 			return 8
 		},
 		// 0xC3: SET 0, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 0, cpu)
+			cpu.E = setBit(cpu.E, 0)
 			return 8
 		},
 		// 0xC4: SET 0, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 0, cpu)
+			cpu.H = setBit(cpu.H, 0)
 			return 8
 		},
 		// 0xC5: SET 0, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 0, cpu)
+			cpu.L = setBit(cpu.L, 0)
 			return 8
 		},
 		// 0xC6: SET 0, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 0, cpu)
+			val = setBit(val, 0)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xC7: SET 0, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 0, cpu)
+			cpu.A = setBit(cpu.A, 0)
 			return 16
 		},
 		// 0xC8: SET 1, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 1, cpu)
+			cpu.B = setBit(cpu.B, 1)
 			return 8
 		},
 		// 0xC9: SET 1, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 1, cpu)
+			cpu.C = setBit(cpu.C, 1)
 			return 8
 		},
 		// 0xCA: SET 1, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 1, cpu)
+			cpu.D = setBit(cpu.D, 1)
 			return 8
 		},
 		// 0xCB: SET 1, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 1, cpu)
+			cpu.E = setBit(cpu.E, 1)
 			return 8
 		},
 		// 0xCC: SET 1, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 1, cpu)
+			cpu.H = setBit(cpu.H, 1)
 			return 8
 		},
 		// 0xCD: SET 1, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 1, cpu)
+			cpu.L = setBit(cpu.L, 1)
 			return 8
 		},
 		// 0xCE: SET 1, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 1, cpu)
+			val = setBit(val, 1)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xCF: SET 1, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 1, cpu)
+			cpu.A = setBit(cpu.A, 1)
 			return 16
 		},
 
 		// 0xD0: SET 2, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 2, cpu)
+			cpu.B = setBit(cpu.B, 2)
 			return 8
 		},
 		// 0xD1: SET 2, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 2, cpu)
+			cpu.C = setBit(cpu.C, 2)
 			return 8
 		},
 		// 0xD2: SET 2, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 2, cpu)
+			cpu.D = setBit(cpu.D, 2)
 			return 8
 		},
 		// 0xD3: SET 2, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 2, cpu)
+			cpu.E = setBit(cpu.E, 2)
 			return 8
 		},
 		// 0xD4: SET 2, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 2, cpu)
+			cpu.H = setBit(cpu.H, 2)
 			return 8
 		},
 		// 0xD5: SET 2, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 2, cpu)
+			cpu.L = setBit(cpu.L, 2)
 			return 8
 		},
 		// 0xD6: SET 2, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 2, cpu)
+			val = setBit(val, 2)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xD7: SET 2, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 2, cpu)
+			cpu.A = setBit(cpu.A, 2)
 			return 16
 		},
 		// 0xD8: SET 3, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 3, cpu)
+			cpu.B = setBit(cpu.B, 3)
 			return 8
 		},
 		// 0xD9: SET 3, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 3, cpu)
+			cpu.C = setBit(cpu.C, 3)
 			return 8
 		},
 		// 0xDA: SET 3, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 3, cpu)
+			cpu.D = setBit(cpu.D, 3)
 			return 8
 		},
 		// 0xDB: SET 3, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 3, cpu)
+			cpu.E = setBit(cpu.E, 3)
 			return 8
 		},
 		// 0xDC: SET 3, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 3, cpu)
+			cpu.H = setBit(cpu.H, 3)
 			return 8
 		},
 		// 0xDD: SET 3, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 3, cpu)
+			cpu.L = setBit(cpu.L, 3)
 			return 8
 		},
 		// 0xDE: SET 3, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 3, cpu)
+			val = setBit(val, 3)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xDF: SET 3, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 3, cpu)
+			cpu.A = setBit(cpu.A, 3)
 			return 16
 		},
 
 		// 0xE0: SET 4, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 4, cpu)
+			cpu.B = setBit(cpu.B, 4)
 			return 8
 		},
 		// 0xE1: SET 4, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 4, cpu)
+			cpu.C = setBit(cpu.C, 4)
 			return 8
 		},
 		// 0xE2: SET 4, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 4, cpu)
+			cpu.D = setBit(cpu.D, 4)
 			return 8
 		},
 		// 0xE3: SET 4, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 4, cpu)
+			cpu.E = setBit(cpu.E, 4)
 			return 8
 		},
 		// 0xE4: SET 4, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 4, cpu)
+			cpu.H = setBit(cpu.H, 4)
 			return 8
 		},
 		// 0xE5: SET 4, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 4, cpu)
+			cpu.L = setBit(cpu.L, 4)
 			return 8
 		},
 		// 0xE6: SET 4, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 4, cpu)
+			val = setBit(val, 4)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xE7: SET 4, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 4, cpu)
+			cpu.A = setBit(cpu.A, 4)
 			return 16
 		},
 		// 0xE8: SET 5, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 5, cpu)
+			cpu.B = setBit(cpu.B, 5)
 			return 8
 		},
 		// 0xE9: SET 5, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 5, cpu)
+			cpu.C = setBit(cpu.C, 5)
 			return 8
 		},
 		// 0xEA: SET 5, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 5, cpu)
+			cpu.D = setBit(cpu.D, 5)
 			return 8
 		},
 		// 0xEB: SET 5, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 5, cpu)
+			cpu.E = setBit(cpu.E, 5)
 			return 8
 		},
 		// 0xEC: SET 5, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 5, cpu)
+			cpu.H = setBit(cpu.H, 5)
 			return 8
 		},
 		// 0xED: SET 5, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 5, cpu)
+			cpu.L = setBit(cpu.L, 5)
 			return 8
 		},
 		// 0xEE: SET 5, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 5, cpu)
+			val = setBit(val, 5)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xEF: SET 5, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 5, cpu)
+			cpu.A = setBit(cpu.A, 5)
 			return 16
 		},
 
 		// 0xF0: SET 6, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 6, cpu)
+			cpu.B = setBit(cpu.B, 6)
 			return 8
 		},
 		// 0xF1: SET 6, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 6, cpu)
+			cpu.C = setBit(cpu.C, 6)
 			return 8
 		},
 		// 0xF2: SET 6, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 6, cpu)
+			cpu.D = setBit(cpu.D, 6)
 			return 8
 		},
 		// 0xF3: SET 6, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 6, cpu)
+			cpu.E = setBit(cpu.E, 6)
 			return 8
 		},
 		// 0xF4: SET 6, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 6, cpu)
+			cpu.H = setBit(cpu.H, 6)
 			return 8
 		},
 		// 0xF5: SET 6, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 6, cpu)
+			cpu.L = setBit(cpu.L, 6)
 			return 8
 		},
 		// 0xF6: SET 6, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 6, cpu)
+			val = setBit(val, 6)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xF7: SET 6, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 6, cpu)
+			cpu.A = setBit(cpu.A, 6)
 			return 16
 		},
 		// 0xF8: SET 7, B
 		func(cpu *CPU) int {
-			cpu.B = setBit(cpu.B, 7, cpu)
+			cpu.B = setBit(cpu.B, 7)
 			return 8
 		},
 		// 0xF9: SET 7, C
 		func(cpu *CPU) int {
-			cpu.C = setBit(cpu.C, 7, cpu)
+			cpu.C = setBit(cpu.C, 7)
 			return 8
 		},
 		// 0xFA: SET 7, D
 		func(cpu *CPU) int {
-			cpu.D = setBit(cpu.D, 7, cpu)
+			cpu.D = setBit(cpu.D, 7)
 			return 8
 		},
 		// 0xFB: SET 7, E
 		func(cpu *CPU) int {
-			cpu.E = setBit(cpu.E, 7, cpu)
+			cpu.E = setBit(cpu.E, 7)
 			return 8
 		},
 		// 0xFC: SET 7, H
 		func(cpu *CPU) int {
-			cpu.H = setBit(cpu.H, 7, cpu)
+			cpu.H = setBit(cpu.H, 7)
 			return 8
 		},
 		// 0xFD: SET 7, L
 		func(cpu *CPU) int {
-			cpu.L = setBit(cpu.L, 7, cpu)
+			cpu.L = setBit(cpu.L, 7)
 			return 8
 		},
 		// 0xFE: SET 7, (HL)
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
-			val = setBit(val, 7, cpu)
+			val = setBit(val, 7)
 			cpu.Memory.Write(cpu.HL(), val)
 			return 16
 		},
 		// 0xFF: SET 7, A
 		func(cpu *CPU) int {
-			cpu.A = setBit(cpu.A, 7, cpu)
+			cpu.A = setBit(cpu.A, 7)
 			return 16
 		},
 	}
