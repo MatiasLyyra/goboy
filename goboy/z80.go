@@ -1,5 +1,9 @@
 package goboy
 
+import (
+	"fmt"
+)
+
 // CPU represents internal state of the z80 cpu
 type CPU struct {
 	// General purpose registers
@@ -25,16 +29,87 @@ type CPU struct {
 	PC uint16
 
 	// Misc
-	Halt   bool
-	EI     bool
-	Memory Memory
+	Halt     bool
+	EI       bool
+	Memory   *MMU
+	AutoExec bool
+}
+
+func (cpu *CPU) HandleInterrupts() {
+	if !cpu.EI {
+		return
+	}
+	ie := cpu.Memory.registers[AddrIE]
+	ifReg := cpu.Memory.registers[AddrIF]
+	ieVal := ie.Get()
+	ifRegVal := ifReg.Get()
+	cpu.EI = false
+	for i := 0; i < 5; i++ {
+		mask := uint8(1 << i)
+		if ieVal&mask != 0 && ifRegVal&mask != 0 {
+			cpu.Halt = false
+			ifReg.RawSet(ifRegVal & ^mask)
+			var intVector uint16
+			switch i {
+			case VBlankInt:
+				fmt.Println("VBLank")
+				intVector = 0x40
+			case LCDStatInt:
+				fmt.Println("LCDStat")
+				intVector = 0x48
+			case TimerInt:
+				intVector = 0x50
+			case SerialInt:
+				intVector = 0x58
+			case JoypadInt:
+				intVector = 0x60
+			}
+			cpu.Memory.Write(cpu.SP-1, uint8(cpu.PC>>8))
+			cpu.Memory.Write(cpu.SP-2, uint8(cpu.PC))
+			cpu.SP -= 2
+			cpu.PC = intVector
+			break
+		}
+	}
 }
 
 func (cpu *CPU) RunSingleOpcode() int {
-	opcode := cpu.Memory.Read(cpu.PC)
-	// fmt.Println(InstructionStrings[opcode])
-	cpu.PC++
-	return InstructionsTable[opcode](cpu)
+	cpu.updateTimers()
+	cpu.HandleInterrupts()
+	if !cpu.Halt {
+		cpu.AutoExec = false
+		// if cpu.PC == 0xC38F {
+		// 	cpu.AutoExec = false
+		// }
+		opcode := cpu.Memory.Read(cpu.PC)
+		if !cpu.AutoExec {
+			fmt.Printf("PC: %X Instr: %v\n", cpu.PC, InstructionStrings[opcode])
+			fmt.Scanln()
+		}
+		cpu.PC++
+		if cpu.PC > 255 {
+			cpu.Memory.BootEnabled = false
+		}
+		return InstructionsTable[opcode](cpu)
+	}
+	return 4
+}
+
+func (cpu *CPU) updateTimers() {
+	var (
+		tima  = cpu.Memory.registers[AddrTIMA]
+		tma   = cpu.Memory.registers[AddrTMA]
+		tac   = cpu.Memory.registers[AddrTAC]
+		ifReg = cpu.Memory.registers[AddrIF]
+	)
+	if tac.Get()&0b100 == 0 {
+		return
+	}
+	tima.RawSet(tima.Get() + 1)
+	if tima.Get() == 0 {
+		ifReg.RawSet(setBit(ifReg.Get(), TimerInt))
+		tima.RawSet(tma.Get())
+	}
 }
 
 // F returns flags as uint8

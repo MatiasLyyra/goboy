@@ -144,8 +144,8 @@ func init() {
 			cpu.FCarry = carry == 1
 			return 4
 		},
-		// 0x10f: RRCA
-		// Rotate A right through carry
+		// 0x10: ???
+		// ????
 		func(cpu *CPU) int {
 			cpu.PC++
 			// TODO: Something better than just os.Exit...
@@ -1823,7 +1823,7 @@ func init() {
 		},
 		// 0xD9: RETI
 		func(cpu *CPU) int {
-			// TODO: Probably has to something in addition to popping PC from stack
+			cpu.EI = true
 			cpu.PC = uint16(cpu.Memory.Read(cpu.SP+1))<<8 | uint16(cpu.Memory.Read(cpu.SP))
 			cpu.SP += 2
 			return 20
@@ -2058,6 +2058,7 @@ func init() {
 		},
 		// 0xFA: LD A, (a16)
 		func(cpu *CPU) int {
+			cpu.PC += 2
 			cpu.A = cpu.Memory.Read(uint16(cpu.Memory.Read(cpu.PC+1))<<8 | uint16(cpu.Memory.Read(cpu.PC)))
 			return 16
 		},
@@ -2084,13 +2085,13 @@ func init() {
 			cpu.PC++
 			return 8
 		},
-		// 0xDF: RST 38H
+		// 0xFF: RST 38H
 		func(cpu *CPU) int {
 			cpu.Memory.Write(cpu.SP-1, uint8(cpu.PC>>8))
 			cpu.Memory.Write(cpu.SP-2, uint8(cpu.PC))
 			cpu.SP -= 2
 			cpu.PC = 0x38
-			return 16
+			return 4
 		},
 	}
 }

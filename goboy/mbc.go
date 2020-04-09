@@ -1,5 +1,9 @@
 package goboy
 
+import (
+	"fmt"
+)
+
 type MBC0 struct {
 	rom [ROMBankSize]byte
 }
@@ -65,14 +69,18 @@ func (mbc *MBC1) Write(addr uint16, data uint8) {
 			data++
 		}
 		mbc.romBankNumber = data
+		fmt.Printf("ROM Bank number: %d\n", data)
 		return
 	}
 	if addr <= 0x5FFF {
 		mbc.ramBankNumber = data
+		fmt.Printf("RAM Bank number: %d\n", data)
 		return
 	}
 	if addr <= 0x7FFF {
 		mbc.romModeSelect = data
+		fmt.Printf("ROM Mode number: %d\n", data)
+
 		return
 	}
 

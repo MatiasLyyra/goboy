@@ -28,7 +28,6 @@ func (f CGB) String() string {
 	default:
 		panic("Invalid CGBFlag")
 	}
-	return ""
 }
 
 const (
@@ -262,6 +261,12 @@ func (rom *Cartridge) Read(addr uint16) uint8 {
 		return rom.Bank0[addr]
 	}
 	return rom.MBC.Read(addr)
+}
+
+func (rom *Cartridge) Write(addr uint16, data uint8) {
+	if addr > ROMEnd {
+		rom.MBC.Write(addr, data)
+	}
 }
 
 func (rom *Cartridge) Title() string {

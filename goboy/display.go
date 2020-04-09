@@ -1,17 +1,8 @@
 package goboy
 
-import "sort"
-
-// Available colors
-const (
-	// 0xFFFFFF
-	ColorWhite = iota
-	// 0xAAAAAA
-	ColorLightGray
-	// 0x555555
-	ColorDarkGray
-	// 0x000000
-	ColorBlack
+import (
+	"fmt"
+	"sort"
 )
 
 const (
@@ -51,21 +42,35 @@ func (s Sprite) Lower8x16() uint8 {
 	return s.TileID | 0x01
 }
 
+func NewDisplay(mmu *MMU) *Display {
+	d := &Display{
+		mmu: mmu,
+	}
+	// // TODO: Read the actual values from memory
+	// // These should be initially zero
+	// for i := 0; i < 4; i++ {
+	// 	d.spritePalettes[0][i] = uint8(i)
+	// 	d.spritePalettes[1][i] = uint8(i)
+	// 	d.bgPalette[i] = uint8(i)
+	// }
+	return d
+}
+
 type Display struct {
 	mmu *MMU
 
-	vram [VideoRAMSize]uint8
+	VRAM [VideoRAMSize]uint8
 	oam  [OAMSize]uint8
 
 	cycles         int
 	row            int
 	spritePalettes [2][4]uint8
 	bgPalette      [4]uint8
-	priorityBuffer [160 * 144]uint8
+	priorityBuffer [160]uint8
 	spriteBuffer   [160 * 144]uint8
 }
 
-func (d *Display) Run(cycles int) {
+func (d *Display) Run(cycles int, sink chan<- [160 * 144]uint8) {
 	var (
 		lcdcStat = d.mmu.registers[AddrLCDCStat]
 		ifReg    = d.mmu.registers[AddrIF]
@@ -100,6 +105,7 @@ func (d *Display) Run(cycles int) {
 			if lcdcStat.Get()&(1<<4) != 0 {
 				ifReg.RawSet(setBit(ifReg.Get(), VBlankInt))
 			}
+			sink <- d.spriteBuffer
 		}
 	} else if rowCycles < OAMDuration {
 		if currentMode != ModeOAM {
@@ -116,12 +122,24 @@ func (d *Display) Run(cycles int) {
 	} else {
 		if currentMode != ModeHBlank {
 			lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | ModeHBlank)
+			var (
+				bgp = d.mmu.registers[AddrBGP].Get()
+			)
 			// Start of HBlank, draw row into screen buffer
 			// Request LCD STAT interrupt if HBlank Interrupts are enabled
-			d.drawRow(row)
+			for i := range d.priorityBuffer {
+				d.priorityBuffer[i] = prioUndrawn
+			}
+			d.bgPalette[0] = bgp & 3
+			d.bgPalette[1] = (bgp & (3 << 2)) >> 2
+			d.bgPalette[2] = (bgp & (3 << 4)) >> 4
+			d.bgPalette[3] = (bgp & (3 << 6)) >> 6
+			d.drawBackground(row)
+			// d.drawSpriteRow(row)
 			if lcdcStat.Get()&(1<<3) != 0 {
 				ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
 			}
+			// sink <- d.spriteBuffer
 		}
 	}
 	ly.RawSet(uint8(row))
@@ -129,7 +147,7 @@ func (d *Display) Run(cycles int) {
 
 func (d *Display) Read(addr uint16) uint8 {
 	if VideoRAMStart <= addr && addr <= VideoRAMEnd {
-		return d.vram[addr-VideoRAMStart]
+		return d.VRAM[addr-VideoRAMStart]
 	}
 	if OAMStart <= addr && addr <= OAMEnd {
 		return d.oam[addr-OAMStart]
@@ -139,7 +157,7 @@ func (d *Display) Read(addr uint16) uint8 {
 
 func (d *Display) Write(addr uint16, data uint8) {
 	if VideoRAMStart <= addr && addr <= VideoRAMEnd {
-		d.vram[addr-VideoRAMStart] = data
+		d.VRAM[addr-VideoRAMStart] = data
 		return
 	}
 	if OAMStart <= addr && addr <= OAMEnd {
@@ -149,7 +167,44 @@ func (d *Display) Write(addr uint16, data uint8) {
 	panic("Invalid addr")
 }
 
-func (d *Display) drawRow(row int) {
+func (d *Display) drawBackground(row int) {
+	var (
+		scx         = d.mmu.registers[AddrSCX].Get()
+		scy         = d.mmu.registers[AddrSCY].Get()
+		lcdc        = d.mmu.registers[AddrLCDC]
+		useLowerMap = lcdc.Get()&(1<<3) == 0
+		tileData    []uint8
+	)
+	if useLowerMap {
+		tileData = d.backgroundTileMap1()
+	} else {
+		tileData = d.backgroundTileMap2()
+	}
+	var i int
+outer:
+	for {
+		pixelPosX := (i + int(scx)) % 256
+		pixelPosY := (row + int(scy)) % 256
+		tileX := pixelPosX / 8
+		tileY := pixelPosY / 8
+		tileID := tileData[tileY*32+tileX]
+		tile := d.GetTile(tileID, false)
+		tileRowStart := ((row) % 8) * 2
+		pixels := getPixelRow([2]uint8{tile[tileRowStart+1], tile[tileRowStart]})
+		for _, val := range pixels {
+			d.spriteBuffer[row*160+i] = d.bgPalette[val]
+
+			if val != 0 {
+				d.priorityBuffer[i] = prioBackground
+			}
+			i++
+			if i >= 160 {
+				break outer
+			}
+		}
+	}
+}
+func (d *Display) drawSpriteRow(row int) {
 	var spriteHeight int = 8
 	var longSprites = d.mmu.registers[AddrLCDC].Get()&(1<<2) != 0
 	// Check LCDC register bit 2 for current sprite size
@@ -197,10 +252,10 @@ func (d *Display) drawRow(row int) {
 			idx := row*144 + pixelX
 
 			// Check if that we aren't drawing above another sprite that was already drawn
-			//
-			if d.priorityBuffer[idx] != prioSprite && (aboveBG || d.priorityBuffer[idx] == prioUndrawn) && pixelX < 160 {
+			if d.priorityBuffer[pixelX] != prioSprite && (aboveBG || d.priorityBuffer[pixelX] == prioUndrawn) && pixelX < 160 {
 				if pixelVal != 0 {
-					d.priorityBuffer[idx] = prioSprite
+					fmt.Printf("Pixel val: %d\n", pixelVal)
+					d.priorityBuffer[pixelX] = prioSprite
 				}
 				d.spriteBuffer[idx] = d.spritePalettes[spritePaletteID][pixelVal]
 			}
@@ -210,34 +265,40 @@ func (d *Display) drawRow(row int) {
 
 func getPixelRow(rawTileRow [2]uint8) (pixels [8]uint8) {
 	tileRow1, tileRow2 := rawTileRow[0], rawTileRow[1]
-	pixels[0] = (tileRow1 & (3 << 6)) >> 6
-	pixels[1] = (tileRow1 & (3 << 4)) >> 4
-	pixels[2] = (tileRow1 & (3 << 2)) >> 2
-	pixels[3] = tileRow1 & 3
-	pixels[4] = (tileRow2 & (3 << 6)) >> 6
-	pixels[5] = (tileRow2 & (3 << 4)) >> 4
-	pixels[6] = (tileRow2 & (3 << 2)) >> 2
-	pixels[7] = tileRow2 & 3
+	for i := 0; i < 8; i++ {
+		pixels[i] = (tileRow1 & (1 << (7 - i))) >> (7 - i)
+		pixels[i] = (tileRow2 & (1 << (7 - i))) >> (7 - i) << 1
+		pixels[i] &= 3
+	}
 	return
 }
 
 func (d *Display) GetTile(id uint8, spriteData bool) []uint8 {
 	if spriteData || d.mmu.registers[AddrLCDC].Get()&(1<<4) != 0 {
-		return d.tilePatternTable1()[id*16 : id*16+16]
+		memoryLoc := int(id) * 16
+		return d.tilePatternTable1()[memoryLoc : memoryLoc+16]
 	}
-	memoryLoc := 0x800 + int(int8(id))
+	memoryLoc := 0x800 + int(int8(id))*16
 	return d.tilePatternTable2()[memoryLoc : memoryLoc+16]
 }
 
 func (d *Display) tilePatternTable1() []uint8 {
 	// Tile Pattern Table 1 starts at 0x8000 and ends at 0x8FFF
 	// Return slice from 0x0 to 0x1000 (exclusive)
-	return d.vram[0x0000:0x1000]
+	return d.VRAM[0x0000:0x1000]
 }
 func (d *Display) tilePatternTable2() []uint8 {
 	// Tile Pattern Table 2 starts at 0x8800 and ends at 0x97FF
 	// Return slice from 0x0800 to 0x1800 (exclusive)
-	return d.vram[0x0800:0x1800]
+	return d.VRAM[0x0800:0x1800]
+}
+
+func (d *Display) backgroundTileMap1() []uint8 {
+	return d.VRAM[0x1800:0x1C00]
+}
+
+func (d *Display) backgroundTileMap2() []uint8 {
+	return d.VRAM[0x1C00:0x2000]
 }
 
 func (d *Display) GetSprite(id int) Sprite {

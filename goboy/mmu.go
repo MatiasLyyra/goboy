@@ -1,5 +1,9 @@
 package goboy
 
+import (
+	"fmt"
+)
+
 // Memory is an interface for cpu to communicate with external devices (RAM, display etc.)
 type Memory interface {
 	Read(addr uint16) uint8
@@ -29,12 +33,17 @@ const (
 	AddrDMA      = 0xFF46
 	AddrIE       = 0xFFFF
 	AddrIF       = 0xFF0F
+	AddrSB       = 0xFF01
+	AddrTIMA     = 0xFF05
+	AddrTMA      = 0xFF06
+	AddrTAC      = 0xFF07
 )
 
 // Defines different memory boundaries for Gameboy
 const (
 	// ROM
 	ROMStart     = 0x0000
+	ROMBootEnd   = 0x00FF
 	ROMEnd       = 0x3FFF
 	ROMBankStart = 0x4000
 	ROMBankEnd   = 0x7FFF
@@ -64,14 +73,55 @@ const (
 	RAMBankSize  = ExtRAMEnd - ExtRAMStart + 1
 	VideoRAMSize = VideoRAMEnd - VideoRAMStart + 1
 	OAMSize      = OAMEnd - OAMStart + 1
+	WRAMSize     = WRAMEnd - WRAMStart + 1
+	EchoSize     = EchoEnd - EchoStart + 1
+	EchoOffset   = EchoStart - WRAMStart
+	HRAMSize     = HRAMEnd - HRAMStart + 1
 )
 
+func NewMMU(cart Memory) *MMU {
+	mmu := &MMU{}
+	mmu.BootEnabled = true
+	mmu.Cartridge = cart
+	mmu.GPU = NewDisplay(mmu)
+	mmu.WRAM = &GenericRAM{
+		data:   make([]uint8, WRAMSize),
+		offset: WRAMStart,
+	}
+	mmu.HRAM = &GenericRAM{
+		data:   make([]uint8, HRAMSize),
+		offset: HRAMStart,
+	}
+	mmu.registers = map[uint16]MemoryRegister{
+		AddrLCDC:     NewRWRegister(0, 0),
+		AddrLCDCStat: NewRWRegister(0, 0b111),
+		AddrLYC:      NewRWRegister(0, 0),
+		AddrLY:       NewRWRegister(0, 255),
+		AddrIF:       NewRWRegister(0, 0),
+		AddrIE:       NewRWRegister(0, 0),
+		AddrSCX:      NewRWRegister(0, 0),
+		AddrSCY:      NewRWRegister(0, 0),
+		AddrBGP:      NewRWRegister(0, 0),
+		AddrSB:       NewRWRegister(0, 0),
+		AddrTIMA:     NewRWRegister(0, 0),
+		AddrTMA:      NewRWRegister(0, 0),
+		AddrTAC:      NewRWRegister(0, 0),
+		AddrDMA: CallbackRegister{
+			fn: func(data uint8) {
+				fmt.Println("DMA Called")
+			},
+		},
+	}
+	return mmu
+}
+
 type MMU struct {
-	Cartridge Memory
-	GPU       Memory
-	WRAM      Memory
-	HRAM      Memory
-	registers map[uint16]MemoryRegister
+	Cartridge   Memory
+	GPU         *Display
+	WRAM        Memory
+	HRAM        Memory
+	registers   map[uint16]MemoryRegister
+	BootEnabled bool
 }
 
 func (mmu *MMU) Read(addr uint16) uint8 {
@@ -80,12 +130,18 @@ func (mmu *MMU) Read(addr uint16) uint8 {
 	}
 	switch {
 	case ROMStart <= addr && addr <= ROMBankEnd:
+		// if addr <= ROMBootEnd && mmu.BootEnabled {
+		// 	return boot2[addr]
+		// }
 		return mmu.Cartridge.Read(addr)
 	case VideoRAMStart <= addr && addr <= VideoRAMEnd:
 		return mmu.GPU.Read(addr)
 	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
 		return mmu.Cartridge.Read(addr)
 	case WRAMStart <= addr && addr <= EchoEnd:
+		if addr >= EchoStart {
+			addr -= EchoOffset
+		}
 		return mmu.WRAM.Read(addr)
 	case OAMStart <= addr && addr <= OAMEnd:
 		return mmu.GPU.Read(addr)
@@ -99,6 +155,9 @@ func (mmu *MMU) Read(addr uint16) uint8 {
 }
 
 func (mmu *MMU) Write(addr uint16, data uint8) {
+	if addr == 0xFF02 && data == 0x81 {
+		fmt.Print(string(mmu.Read(AddrSB)))
+	}
 	if reg, found := mmu.registers[addr]; found {
 		reg.Set(data)
 		return
@@ -111,6 +170,9 @@ func (mmu *MMU) Write(addr uint16, data uint8) {
 	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
 		mmu.Cartridge.Write(addr, data)
 	case WRAMStart <= addr && addr <= EchoEnd:
+		if addr >= EchoStart {
+			addr -= EchoOffset
+		}
 		mmu.WRAM.Write(addr, data)
 	case OAMStart <= addr && addr <= OAMEnd:
 		mmu.GPU.Write(addr, data)
@@ -119,6 +181,15 @@ func (mmu *MMU) Write(addr uint16, data uint8) {
 	}
 }
 
-func (mmu *MMU) Apply(addr uint16, reg MemoryRegister) {
-	mmu.registers[addr] = reg
+type GenericRAM struct {
+	data   []uint8
+	offset uint16
+}
+
+func (r *GenericRAM) Write(addr uint16, data uint8) {
+	r.data[addr-r.offset] = data
+}
+
+func (r *GenericRAM) Read(addr uint16) uint8 {
+	return r.data[addr-r.offset]
 }

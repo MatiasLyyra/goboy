@@ -6,6 +6,14 @@ type MemoryRegister interface {
 	Get() uint8
 }
 
+type CallbackRegister struct {
+	fn func(data uint8)
+}
+
+func (r CallbackRegister) RawSet(uint8)   {}
+func (r CallbackRegister) Set(data uint8) { r.fn(data) }
+func (r CallbackRegister) Get() uint8     { return 0 }
+
 const (
 	Bit0 = 1 << 0
 	Bit1 = 1 << 1
