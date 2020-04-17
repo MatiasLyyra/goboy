@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/MatiasLyyra/goboy/debug"
 	"github.com/MatiasLyyra/goboy/goboy"
 	"github.com/MatiasLyyra/goboy/gui"
 	"github.com/veandco/go-sdl2/sdl"
@@ -37,10 +38,22 @@ func main() {
 	go func() {
 		mmu := goboy.NewMMU(rom)
 		cpu := goboy.CPU{
-			Memory:   mmu,
-			PC:       0x0100,
-			AutoExec: true,
+			Memory: mmu,
+			PC:     0x0100,
+			A:      0x11,
+			D:      0xFF,
+			E:      0x56,
+			SP:     0xFFFE,
 		}
+		cpu.SetF(0x80)
+		// Continue from C37F
+		debugger := debug.Debugger{
+			CPU: &cpu,
+			Breakpoints: map[uint16]struct{}{
+				0x0100: struct{}{},
+			},
+		}
+		debug.StartDebugger(debugger, sink)
 		const cyclesInSecond = 4213440
 		// var cycleCount uint64
 		for {
@@ -65,5 +78,6 @@ func main() {
 			}
 		}
 		w.Draw(<-sink)
+		// <-sink
 	}
 }

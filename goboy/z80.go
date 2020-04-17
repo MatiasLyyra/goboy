@@ -29,33 +29,30 @@ type CPU struct {
 	PC uint16
 
 	// Misc
-	Halt     bool
-	EI       bool
-	Memory   *MMU
-	AutoExec bool
+	Halt   bool
+	EI     bool
+	Memory *MMU
 }
 
-func (cpu *CPU) HandleInterrupts() {
+func (cpu *CPU) HandleInterrupts() bool {
 	if !cpu.EI {
-		return
+		return false
 	}
 	ie := cpu.Memory.registers[AddrIE]
 	ifReg := cpu.Memory.registers[AddrIF]
 	ieVal := ie.Get()
 	ifRegVal := ifReg.Get()
-	cpu.EI = false
 	for i := 0; i < 5; i++ {
 		mask := uint8(1 << i)
 		if ieVal&mask != 0 && ifRegVal&mask != 0 {
+			cpu.EI = false
 			cpu.Halt = false
 			ifReg.RawSet(ifRegVal & ^mask)
 			var intVector uint16
 			switch i {
 			case VBlankInt:
-				fmt.Println("VBLank")
 				intVector = 0x40
 			case LCDStatInt:
-				fmt.Println("LCDStat")
 				intVector = 0x48
 			case TimerInt:
 				intVector = 0x50
@@ -68,28 +65,21 @@ func (cpu *CPU) HandleInterrupts() {
 			cpu.Memory.Write(cpu.SP-2, uint8(cpu.PC))
 			cpu.SP -= 2
 			cpu.PC = intVector
-			break
+			return true
 		}
 	}
+	return false
 }
 
 func (cpu *CPU) RunSingleOpcode() int {
 	cpu.updateTimers()
-	cpu.HandleInterrupts()
+	interrupt := cpu.HandleInterrupts()
 	if !cpu.Halt {
-		cpu.AutoExec = false
-		// if cpu.PC == 0xC38F {
-		// 	cpu.AutoExec = false
-		// }
 		opcode := cpu.Memory.Read(cpu.PC)
-		if !cpu.AutoExec {
-			fmt.Printf("PC: %X Instr: %v\n", cpu.PC, InstructionStrings[opcode])
-			fmt.Scanln()
+		if interrupt {
+			fmt.Printf("CPU PC: %04X\n", cpu.PC)
 		}
 		cpu.PC++
-		if cpu.PC > 255 {
-			cpu.Memory.BootEnabled = false
-		}
 		return InstructionsTable[opcode](cpu)
 	}
 	return 4
@@ -97,18 +87,18 @@ func (cpu *CPU) RunSingleOpcode() int {
 
 func (cpu *CPU) updateTimers() {
 	var (
-		tima  = cpu.Memory.registers[AddrTIMA]
-		tma   = cpu.Memory.registers[AddrTMA]
-		tac   = cpu.Memory.registers[AddrTAC]
-		ifReg = cpu.Memory.registers[AddrIF]
+		tima = cpu.Memory.registers[AddrTIMA]
+		// tma   = cpu.Memory.registers[AddrTMA]
+		tac = cpu.Memory.registers[AddrTAC]
+		// ifReg = cpu.Memory.registers[AddrIF]
 	)
-	if tac.Get()&0b100 == 0 {
+	if tac.Get()&0x04 == 0 {
 		return
 	}
 	tima.RawSet(tima.Get() + 1)
 	if tima.Get() == 0 {
-		ifReg.RawSet(setBit(ifReg.Get(), TimerInt))
-		tima.RawSet(tma.Get())
+		// ifReg.RawSet(setBit(ifReg.Get(), TimerInt))
+		// tima.RawSet(tma.Get())
 	}
 }
 

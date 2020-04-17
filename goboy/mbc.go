@@ -9,7 +9,10 @@ type MBC0 struct {
 }
 
 func (mbc *MBC0) Read(addr uint16) uint8 {
-	return mbc.rom[uint(addr)-ROMBankStart]
+	if addr <= ROMBankEnd {
+		return mbc.rom[uint(addr)-ROMBankStart]
+	}
+	return 0
 }
 
 func (mbc *MBC0) Write(addr uint16, data uint8) {

@@ -169,8 +169,8 @@ func (d *Display) Write(addr uint16, data uint8) {
 
 func (d *Display) drawBackground(row int) {
 	var (
-		scx         = d.mmu.registers[AddrSCX].Get()
-		scy         = d.mmu.registers[AddrSCY].Get()
+		scx         = 0 // d.mmu.registers[AddrSCX].Get()
+		scy         = 0 // d.mmu.registers[AddrSCY].Get()
 		lcdc        = d.mmu.registers[AddrLCDC]
 		useLowerMap = lcdc.Get()&(1<<3) == 0
 		tileData    []uint8
@@ -190,7 +190,7 @@ outer:
 		tileID := tileData[tileY*32+tileX]
 		tile := d.GetTile(tileID, false)
 		tileRowStart := ((row) % 8) * 2
-		pixels := getPixelRow([2]uint8{tile[tileRowStart+1], tile[tileRowStart]})
+		pixels := getPixelRow([2]uint8{tile[tileRowStart], tile[tileRowStart+1]})
 		for _, val := range pixels {
 			d.spriteBuffer[row*160+i] = d.bgPalette[val]
 

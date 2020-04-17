@@ -7,7 +7,7 @@
         {
             "name": "Launch",
             "type": "go",
-            "request": "launch",
+            "request": "exec",
             "mode": "debug",
             "program": "${workspaceFolder}/main.go",
             "env": {},

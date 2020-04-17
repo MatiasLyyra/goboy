@@ -18,8 +18,8 @@ func init() {
 		// 0x01: LD BC, d16
 		// Load value d16 to BC
 		func(cpu *CPU) int {
-			cpu.C = cpu.Memory.Read(cpu.PC + 1)
-			cpu.B = cpu.Memory.Read(cpu.PC)
+			cpu.C = cpu.Memory.Read(cpu.PC)
+			cpu.B = cpu.Memory.Read(cpu.PC + 1)
 			cpu.PC += 2
 			return 12
 		},
@@ -2044,6 +2044,8 @@ func init() {
 		func(cpu *CPU) int {
 			r8 := int(int8(cpu.Memory.Read(cpu.PC)))
 			result := int(cpu.SP) + r8
+			cpu.H = uint8(result >> 8)
+			cpu.L = uint8(result)
 			cpu.FZero = false
 			cpu.FSub = false
 			cpu.FHalfCarry = ((int(cpu.SP) ^ r8 ^ result) & 0x10) == 0x10
@@ -2058,8 +2060,8 @@ func init() {
 		},
 		// 0xFA: LD A, (a16)
 		func(cpu *CPU) int {
-			cpu.PC += 2
 			cpu.A = cpu.Memory.Read(uint16(cpu.Memory.Read(cpu.PC+1))<<8 | uint16(cpu.Memory.Read(cpu.PC)))
+			cpu.PC += 2
 			return 16
 		},
 		// 0xFB: EI
