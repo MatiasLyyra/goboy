@@ -783,7 +783,7 @@ func init() {
 		},
 		// 0x7F: BIT 7, A
 		func(cpu *CPU) int {
-			testBit(cpu.A, 5, cpu)
+			testBit(cpu.A, 7, cpu)
 			return 8
 		},
 		// 0x80: RES 0, B

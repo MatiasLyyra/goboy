@@ -6,6 +6,32 @@ type MicroCodeFunc func(cpu *CPU) int
 // InstructionsTable contains all of the unprefixed instructions
 var InstructionsTable [256]MicroCodeFunc
 
+func opADC(cpu *CPU, val uint8) {
+	var carry uint16
+	if cpu.FCarry {
+		carry = 1
+	}
+	result := uint16(cpu.A) + uint16(val) + carry
+	cpu.FHalfCarry = (cpu.A&0xf)+(val&0xf)+uint8(carry) > 0xf
+	cpu.A = uint8(result)
+	cpu.FZero = cpu.A == 0
+	cpu.FSub = false
+	cpu.FCarry = result > 0xff
+}
+
+func opSBC(cpu *CPU, val uint8) {
+	var carry int
+	if cpu.FCarry {
+		carry = 1
+	}
+	result := int(cpu.A) - int(val) - carry
+	cpu.FHalfCarry = int(cpu.A&0xf)-int(val&0xf)-carry < 0
+	cpu.A = uint8(result)
+	cpu.FZero = cpu.A == 0
+	cpu.FSub = true
+	cpu.FCarry = result < 0
+}
+
 func init() {
 	// TODO: Clean duplicate instructions into a function and combine them
 	// like with
@@ -220,9 +246,8 @@ func init() {
 		// 0x18: JR r8
 		// Relative jump to r8
 		func(cpu *CPU) int {
-			relJump := int32(int8(cpu.Memory.Read(cpu.PC)))
-			// Add one because of r8
-			tempPC := int32(cpu.PC) + relJump + 1
+			relJump := int(int8(cpu.Memory.Read(cpu.PC)))
+			tempPC := int(cpu.PC) + relJump + 1
 			cpu.PC = uint16(tempPC)
 			return 12
 		},
@@ -248,8 +273,8 @@ func init() {
 		// Substract one from DE
 		func(cpu *CPU) int {
 			temp := cpu.DE() - 1
-			cpu.B = uint8(temp >> 8)
-			cpu.C = uint8(temp)
+			cpu.D = uint8(temp >> 8)
+			cpu.E = uint8(temp)
 			return 8
 		},
 		// 0x1C: INC E
@@ -517,6 +542,8 @@ func init() {
 		// Set C flag
 		func(cpu *CPU) int {
 			cpu.FCarry = true
+			cpu.FSub = false
+			cpu.FHalfCarry = false
 			return 4
 		},
 		// 0x38: JR C, r8
@@ -585,8 +612,8 @@ func init() {
 		// 0x3F: CCF
 		// Flag C = ! Flag C
 		func(cpu *CPU) int {
-			cpu.FSub = true
-			cpu.FHalfCarry = true
+			cpu.FSub = false
+			cpu.FHalfCarry = false
 			cpu.FCarry = !cpu.FCarry
 			return 4
 		},
@@ -772,7 +799,7 @@ func init() {
 		},
 		// 0x64: LD H, H
 		func(cpu *CPU) int {
-			cpu.D = cpu.H
+			// NOOP
 			return 4
 		},
 		// 0x65: LD H, L
@@ -812,7 +839,7 @@ func init() {
 		},
 		// 0x6C: LD L, H
 		func(cpu *CPU) int {
-			cpu.E = cpu.H
+			cpu.L = cpu.H
 			return 4
 		},
 		// 0x6D: LD L, L
@@ -1000,122 +1027,42 @@ func init() {
 		},
 		// 0x88: ADC A, B
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.B) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.B)
 			return 4
 		},
 		// 0x89: ADC A, C
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.C) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.C)
 			return 4
 		},
 		// 0x8A: ADC A, D
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.D) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.D)
 			return 4
 		},
 		// 0x8B: ADC A, E
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.E) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.E)
 			return 4
 		},
 		// 0x8C: ADC A, H
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.H) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.H)
 			return 4
 		},
 		// 0x8D: ADC A, L
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.L) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.L)
 			return 4
 		},
 		// 0x8E: ADC A, (HL)
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.Memory.Read(cpu.HL())) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.Memory.Read(cpu.HL()))
 			return 8
 		},
 		// 0x8F: ADC A, A
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.A) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.A)
 			return 4
 		},
 		// 0x90: SUB A, B
@@ -1160,7 +1107,7 @@ func init() {
 		},
 		// 0x94: SUB A, H
 		func(cpu *CPU) int {
-			temp := int(cpu.A) - int(cpu.E)
+			temp := int(cpu.A) - int(cpu.H)
 			cpu.FZero = temp == 0
 			cpu.FSub = true
 			cpu.FHalfCarry = cpu.A&0xf < uint8(temp)&0xf
@@ -1170,7 +1117,7 @@ func init() {
 		},
 		// 0x95: SUB A, L
 		func(cpu *CPU) int {
-			temp := int(cpu.A) - int(cpu.E)
+			temp := int(cpu.A) - int(cpu.L)
 			cpu.FZero = temp == 0
 			cpu.FSub = true
 			cpu.FHalfCarry = cpu.A&0xf < uint8(temp)&0xf
@@ -1199,115 +1146,42 @@ func init() {
 		},
 		// 0x98: SBC A, B
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.B) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.B&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.B)
 			return 4
 		},
 		// 0x99: SBC A, C
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.C) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.C&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.C)
 			return 4
 		},
 		// 0x9A: SBC A, D
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.D) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.D&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.D)
 			return 4
 		},
 		// 0x9B: SBC A, E
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.E) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.E&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.E)
 			return 4
 		},
 		// 0x9C: SBC A, H
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.H) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.H&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.H)
 			return 4
 		},
 		// 0x9D: SBC A, L
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.L) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.L&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.L)
 			return 4
 		},
 		// 0x9E: SBC A, (HL)
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			hl := cpu.Memory.Read(cpu.HL())
-			temp := int(cpu.A) - int(hl) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(hl&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.Memory.Read(cpu.HL()))
 			return 8
 		},
 		// 0x9D: SBC A, A
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := int(cpu.A) - int(cpu.A) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(cpu.A&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.A)
 			return 4
 		},
 		// 0xA0: AND B
@@ -1722,17 +1596,7 @@ func init() {
 		},
 		// 0xCE: ADC A, d8
 		func(cpu *CPU) int {
-			var carry uint16
-			if cpu.FCarry {
-				carry = 1
-			}
-			temp := uint16(cpu.A) + uint16(cpu.Memory.Read(cpu.PC)) + carry
-			uint8Val := uint8(temp)
-			cpu.FZero = uint8Val == 0
-			cpu.FSub = false
-			cpu.FHalfCarry = cpu.A&0xf > uint8(temp)&0xf
-			cpu.FCarry = temp > 0xff
-			cpu.A = uint8Val
+			opADC(cpu, cpu.Memory.Read(cpu.PC))
 			cpu.PC++
 			return 8
 		},
@@ -1860,17 +1724,7 @@ func init() {
 		},
 		// 0xDE: SBC A, d8
 		func(cpu *CPU) int {
-			var carry int
-			if cpu.FCarry {
-				carry = 1
-			}
-			tempVal := cpu.Memory.Read(cpu.PC)
-			temp := int(cpu.A) - int(tempVal) - carry
-			cpu.FZero = temp == 0
-			cpu.FSub = true
-			cpu.FHalfCarry = int(cpu.A&0xf)-int(tempVal&0xf)-carry < 0
-			cpu.FCarry = temp < 0
-			cpu.A = uint8(temp)
+			opSBC(cpu, cpu.Memory.Read(cpu.PC))
 			cpu.PC++
 			return 8
 		},
@@ -1942,6 +1796,7 @@ func init() {
 			cpu.FCarry = (int(cpu.SP)^val^(temp&0xffff))&0x100 == 0x100
 			cpu.FHalfCarry = (int(cpu.SP)^val^(temp&0xffff))&0x10 == 0x10
 			cpu.PC++
+			cpu.SP = uint16(temp)
 			return 16
 		},
 		// 0xE9: JP (HL)
@@ -2011,11 +1866,11 @@ func init() {
 			cpu.EI = false
 			return 4
 		},
-		// 0xE4: NOP
+		// 0xF4: NOP
 		func(cpu *CPU) int {
 			return 4
 		},
-		// 0xE5: PUSH AF
+		// 0xF5: PUSH AF
 		func(cpu *CPU) int {
 			cpu.Memory.Write(cpu.SP-1, cpu.A)
 			cpu.Memory.Write(cpu.SP-2, cpu.F())
@@ -2032,12 +1887,12 @@ func init() {
 			cpu.PC++
 			return 4
 		},
-		// 0xF7: RST 20H
+		// 0xF7: RST 30H
 		func(cpu *CPU) int {
 			cpu.Memory.Write(cpu.SP-1, uint8(cpu.PC>>8))
 			cpu.Memory.Write(cpu.SP-2, uint8(cpu.PC))
 			cpu.SP -= 2
-			cpu.PC = 0x20
+			cpu.PC = 0x30
 			return 16
 		},
 		// 0xF8: LD HL, SP+r8
@@ -2055,7 +1910,7 @@ func init() {
 		},
 		// 0xF9: LD SP, HL
 		func(cpu *CPU) int {
-			cpu.SP = cpu.AF()
+			cpu.SP = cpu.HL()
 			return 8
 		},
 		// 0xFA: LD A, (a16)
