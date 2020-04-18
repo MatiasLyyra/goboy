@@ -1,9 +1,5 @@
 package goboy
 
-import (
-	"fmt"
-)
-
 // CPU represents internal state of the z80 cpu
 type CPU struct {
 	// General purpose registers
@@ -32,6 +28,8 @@ type CPU struct {
 	Halt   bool
 	EI     bool
 	Memory *MMU
+
+	Timer int
 }
 
 func (cpu *CPU) HandleInterrupts() bool {
@@ -72,33 +70,43 @@ func (cpu *CPU) HandleInterrupts() bool {
 }
 
 func (cpu *CPU) RunSingleOpcode() int {
-	cpu.updateTimers()
-	interrupt := cpu.HandleInterrupts()
+	cycles := 4
 	if !cpu.Halt {
 		opcode := cpu.Memory.Read(cpu.PC)
-		if interrupt {
-			fmt.Printf("CPU PC: %04X\n", cpu.PC)
-		}
 		cpu.PC++
-		return InstructionsTable[opcode](cpu)
+		cycles = InstructionsTable[opcode](cpu)
 	}
-	return 4
+	cpu.updateTimers(cycles)
+	cpu.HandleInterrupts()
+
+	return cycles
 }
 
-func (cpu *CPU) updateTimers() {
+func (cpu *CPU) updateTimers(cycles int) {
 	var (
-		tima = cpu.Memory.registers[AddrTIMA]
-		// tma   = cpu.Memory.registers[AddrTMA]
-		tac = cpu.Memory.registers[AddrTAC]
-		// ifReg = cpu.Memory.registers[AddrIF]
+		tima  = cpu.Memory.registers[AddrTIMA]
+		tma   = cpu.Memory.registers[AddrTMA]
+		tac   = cpu.Memory.registers[AddrTAC]
+		ifReg = cpu.Memory.registers[AddrIF]
 	)
-	if tac.Get()&0x04 == 0 {
+	tacVal := tac.Get()
+	// Timer is not enabled
+	if tacVal&0x04 == 0 {
 		return
 	}
-	tima.RawSet(tima.Get() + 1)
-	if tima.Get() == 0 {
-		// ifReg.RawSet(setBit(ifReg.Get(), TimerInt))
-		// tima.RawSet(tma.Get())
+	tacClock := 1024
+	if timer := tacVal & 0x3; timer > 0 {
+		tacClock = 16 << ((timer - 1) * 2)
+	}
+	cpu.Timer += cycles
+	for cpu.Timer >= tacClock {
+		cpu.Timer -= tacClock
+		tima.RawSet(tima.Get() + 1)
+		if tima.Get() == 0 {
+			ifReg.RawSet(setBit(ifReg.Get(), TimerInt))
+			tima.RawSet(tma.Get())
+			cpu.Halt = false
+		}
 	}
 }
 

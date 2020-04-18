@@ -710,7 +710,7 @@ func init() {
 			cpu.D = cpu.A
 			return 4
 		},
-		// 0x:58: LD E, B
+		// 0x58: LD E, B
 		func(cpu *CPU) int {
 			cpu.E = cpu.B
 			return 4
