@@ -1,9 +1,5 @@
 package goboy
 
-import (
-	"fmt"
-)
-
 type MBC0 struct {
 	rom [ROMBankSize]byte
 }
@@ -35,19 +31,19 @@ func (mbc *MBC1) Read(addr uint16) uint8 {
 	} else if mbc.RAMEnabled() && ExtRAMStart <= addr && addr <= ExtRAMEnd {
 		return mbc.ram[uint(mbc.SelectedRAM())*RAMBankSize+(uint(addr)-ExtRAMStart)]
 	}
-	return 0
+	return 0xFF
 }
 
 func (mbc *MBC1) RAMEnabled() bool {
-	return mbc.ramEnabled&0xF == 0xA
+	return mbc.ramEnabled&0xA > 0
 }
 
 func (mbc *MBC1) SelectedROM() uint8 {
-	romBank := mbc.romBankNumber & 0x1F
+	romBank := mbc.romBankNumber
 	if mbc.RomModeSelected() {
-		romBank &= (mbc.ramBankNumber & 0x3) << 4
+		romBank |= (mbc.ramBankNumber & 0x3) << 5
 	}
-	return romBank
+	return romBank - 1
 }
 
 func (mbc *MBC1) SelectedRAM() uint8 {
@@ -58,31 +54,32 @@ func (mbc *MBC1) SelectedRAM() uint8 {
 }
 
 func (mbc *MBC1) RomModeSelected() bool {
-	return mbc.romModeSelect != 0x1
+	return mbc.romModeSelect == 0
 }
 
 func (mbc *MBC1) Write(addr uint16, data uint8) {
 	if addr <= 0x1FFF {
+
 		mbc.ramEnabled = data
+		// fmt.Printf("RAM Enabled: %02X\n", data)
 		return
 	}
 	if addr <= 0x3FFF {
-		// Selecting zero bank will select bank 1
-		if data&0x1F == 0 {
-			data++
+		mbc.romBankNumber = data & 0x1F
+		if mbc.romBankNumber == 0 {
+			mbc.romBankNumber++
 		}
-		mbc.romBankNumber = data
-		fmt.Printf("ROM Bank number: %d\n", data)
+		// fmt.Printf("ROM Bank number: %02X\n", data)
 		return
 	}
 	if addr <= 0x5FFF {
 		mbc.ramBankNumber = data
-		fmt.Printf("RAM Bank number: %d\n", data)
+		// fmt.Printf("RAM Bank number: %02X\n", data)
 		return
 	}
 	if addr <= 0x7FFF {
 		mbc.romModeSelect = data
-		fmt.Printf("ROM Mode number: %d\n", data)
+		// fmt.Printf("ROM Mode number: %02X\n", data)
 
 		return
 	}

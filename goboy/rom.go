@@ -249,7 +249,9 @@ func LoadCartridge(r io.Reader) (*Cartridge, error) {
 		r.Read(mbc.rom[:])
 		rom.MBC = &mbc
 	case CART_MBC1, CART_MBC1_RAM, CART_MBC1_RAM_BATTERY:
-		mbc := MBC1{}
+		mbc := MBC1{
+			romBankNumber: 1,
+		}
 		r.Read(mbc.rom[:])
 		rom.MBC = &mbc
 	}
@@ -264,9 +266,7 @@ func (rom *Cartridge) Read(addr uint16) uint8 {
 }
 
 func (rom *Cartridge) Write(addr uint16, data uint8) {
-	if addr > ROMEnd {
-		rom.MBC.Write(addr, data)
-	}
+	rom.MBC.Write(addr, data)
 }
 
 func (rom *Cartridge) Title() string {

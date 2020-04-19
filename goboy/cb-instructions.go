@@ -489,7 +489,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 0, cpu)
-			return 16
+			return 12
 		},
 		// 0x47: BIT 0, A
 		func(cpu *CPU) int {
@@ -530,7 +530,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 1, cpu)
-			return 16
+			return 12
 		},
 		// 0x4F: BIT 1, A
 		func(cpu *CPU) int {
@@ -572,7 +572,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 2, cpu)
-			return 16
+			return 12
 		},
 		// 0x57: BIT 2, A
 		func(cpu *CPU) int {
@@ -613,7 +613,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 3, cpu)
-			return 16
+			return 12
 		},
 		// 0x5F: BIT 3, A
 		func(cpu *CPU) int {
@@ -655,7 +655,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 4, cpu)
-			return 16
+			return 12
 		},
 		// 0x67: BIT 4, A
 		func(cpu *CPU) int {
@@ -696,7 +696,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 5, cpu)
-			return 16
+			return 12
 		},
 		// 0x6F: BIT 5, A
 		func(cpu *CPU) int {
@@ -738,7 +738,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 6, cpu)
-			return 16
+			return 12
 		},
 		// 0x77: BIT 6, A
 		func(cpu *CPU) int {
@@ -779,7 +779,7 @@ func init() {
 		func(cpu *CPU) int {
 			val := cpu.Memory.Read(cpu.HL())
 			testBit(val, 7, cpu)
-			return 16
+			return 12
 		},
 		// 0x7F: BIT 7, A
 		func(cpu *CPU) int {
@@ -826,7 +826,7 @@ func init() {
 		// 0x87: RES 0, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 0)
-			return 16
+			return 8
 		},
 		// 0x88: RES 1, B
 		func(cpu *CPU) int {
@@ -868,7 +868,7 @@ func init() {
 		// 0x8F: RES 1, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 1)
-			return 16
+			return 8
 		},
 
 		// 0x90: RES 2, B
@@ -911,7 +911,7 @@ func init() {
 		// 0x97: RES 2, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 2)
-			return 16
+			return 8
 		},
 		// 0x98: RES 3, B
 		func(cpu *CPU) int {
@@ -953,7 +953,7 @@ func init() {
 		// 0x9F: RES 3, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 3)
-			return 16
+			return 8
 		},
 
 		// 0xA0: RES 4, B
@@ -996,7 +996,7 @@ func init() {
 		// 0xA7: RES 4, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 4)
-			return 16
+			return 8
 		},
 		// 0xA8: RES 5, B
 		func(cpu *CPU) int {
@@ -1038,7 +1038,7 @@ func init() {
 		// 0xAF: RES 5, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 5)
-			return 16
+			return 8
 		},
 
 		// 0xB0: RES 6, B
@@ -1081,7 +1081,7 @@ func init() {
 		// 0xB7: RES 6, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 6)
-			return 16
+			return 8
 		},
 		// 0xB8: RES 7, B
 		func(cpu *CPU) int {
@@ -1123,7 +1123,7 @@ func init() {
 		// 0xBF: RES 7, A
 		func(cpu *CPU) int {
 			cpu.A = resetBit(cpu.A, 7)
-			return 16
+			return 8
 		},
 
 		// 0xC0: SET 0, B
@@ -1166,7 +1166,7 @@ func init() {
 		// 0xC7: SET 0, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 0)
-			return 16
+			return 8
 		},
 		// 0xC8: SET 1, B
 		func(cpu *CPU) int {
@@ -1208,7 +1208,7 @@ func init() {
 		// 0xCF: SET 1, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 1)
-			return 16
+			return 8
 		},
 
 		// 0xD0: SET 2, B
@@ -1251,7 +1251,7 @@ func init() {
 		// 0xD7: SET 2, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 2)
-			return 16
+			return 8
 		},
 		// 0xD8: SET 3, B
 		func(cpu *CPU) int {
@@ -1293,7 +1293,7 @@ func init() {
 		// 0xDF: SET 3, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 3)
-			return 16
+			return 8
 		},
 
 		// 0xE0: SET 4, B
@@ -1336,7 +1336,7 @@ func init() {
 		// 0xE7: SET 4, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 4)
-			return 16
+			return 8
 		},
 		// 0xE8: SET 5, B
 		func(cpu *CPU) int {
@@ -1378,7 +1378,7 @@ func init() {
 		// 0xEF: SET 5, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 5)
-			return 16
+			return 8
 		},
 
 		// 0xF0: SET 6, B
@@ -1421,7 +1421,7 @@ func init() {
 		// 0xF7: SET 6, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 6)
-			return 16
+			return 8
 		},
 		// 0xF8: SET 7, B
 		func(cpu *CPU) int {
@@ -1463,7 +1463,7 @@ func init() {
 		// 0xFF: SET 7, A
 		func(cpu *CPU) int {
 			cpu.A = setBit(cpu.A, 7)
-			return 16
+			return 8
 		},
 	}
 }

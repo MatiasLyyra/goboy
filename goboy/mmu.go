@@ -34,9 +34,11 @@ const (
 	AddrIE       = 0xFFFF
 	AddrIF       = 0xFF0F
 	AddrSB       = 0xFF01
+	AddrDIV      = 0xFF04
 	AddrTIMA     = 0xFF05
 	AddrTMA      = 0xFF06
 	AddrTAC      = 0xFF07
+	AddrJoy      = 0xFF00
 )
 
 // Defines different memory boundaries for Gameboy
@@ -79,10 +81,13 @@ const (
 	HRAMSize     = HRAMEnd - HRAMStart + 1
 )
 
-func NewMMU(cart Memory) *MMU {
+func NewMMU(cart *Cartridge) *MMU {
 	mmu := &MMU{}
 	mmu.BootEnabled = true
 	mmu.Cartridge = cart
+	mmu.Pad = &Joypad{
+		mmu: mmu,
+	}
 	mmu.GPU = NewDisplay(mmu)
 	mmu.WRAM = &GenericRAM{
 		data:   make([]uint8, WRAMSize),
@@ -93,31 +98,44 @@ func NewMMU(cart Memory) *MMU {
 		offset: HRAMStart,
 	}
 	mmu.registers = map[uint16]MemoryRegister{
-		AddrLCDC:     NewRWRegister(0, 0),
+		AddrLCDC:     NewRWRegister(0x91, 0),
 		AddrLCDCStat: NewRWRegister(0, 0b111),
-		AddrLYC:      NewRWRegister(0, 0),
-		AddrLY:       NewRWRegister(0, 255),
-		AddrIF:       NewRWRegister(0, 0),
-		AddrIE:       NewRWRegister(0, 0),
-		AddrSCX:      NewRWRegister(0, 0),
-		AddrSCY:      NewRWRegister(0, 0),
-		AddrBGP:      NewRWRegister(0, 0),
-		AddrSB:       NewRWRegister(0, 0),
-		AddrTIMA:     NewRWRegister(0, 0),
-		AddrTMA:      NewRWRegister(0, 0),
-		AddrTAC:      NewRWRegister(0, 0),
+		// AddrLCDCStat: NewRWRegister(0, 0),
+		AddrLYC:  NewRWRegister(0, 0),
+		AddrLY:   NewRWRegister(0, 255),
+		AddrIF:   NewRWRegister(0, 0),
+		AddrIE:   NewRWRegister(0, 0),
+		AddrSCX:  NewRWRegister(0, 0),
+		AddrSCY:  NewRWRegister(0, 0),
+		AddrBGP:  NewRWRegister(0, 0),
+		AddrOBP0: NewRWRegister(0, 0),
+		AddrOBP1: NewRWRegister(0, 0),
+		AddrSB:   NewRWRegister(0, 0),
+		// TODO: Should reset on write
+		AddrDIV:  NewRWRegister(0, 0),
+		AddrTIMA: NewRWRegister(0, 0),
+		AddrTMA:  NewRWRegister(0, 0),
+		AddrTAC:  NewRWRegister(0, 0),
 		AddrDMA: CallbackRegister{
 			fn: func(data uint8) {
-				fmt.Println("DMA Called")
+				addr := uint16(data) << 8
+				for i := OAMStart; i <= OAMEnd; i++ {
+					mmu.Write(uint16(i), mmu.Read(addr))
+					addr++
+				}
 			},
 		},
+		AddrWX:  NewRWRegister(0, 0),
+		AddrWY:  NewRWRegister(0, 0),
+		AddrJoy: mmu.Pad,
 	}
 	return mmu
 }
 
 type MMU struct {
-	Cartridge   Memory
+	Cartridge   *Cartridge
 	GPU         *Display
+	Pad         *Joypad
 	WRAM        Memory
 	HRAM        Memory
 	registers   map[uint16]MemoryRegister
@@ -151,7 +169,7 @@ func (mmu *MMU) Read(addr uint16) uint8 {
 		return mmu.HRAM.Read(addr)
 	case addr == 0xFFFF:
 	}
-	return 0x0
+	return 0xFF
 }
 
 func (mmu *MMU) Write(addr uint16, data uint8) {
@@ -165,19 +183,25 @@ func (mmu *MMU) Write(addr uint16, data uint8) {
 	switch {
 	case ROMStart <= addr && addr <= ROMBankEnd:
 		mmu.Cartridge.Write(addr, data)
+		return
 	case VideoRAMStart <= addr && addr <= VideoRAMEnd:
 		mmu.GPU.Write(addr, data)
+		return
 	case ExtRAMStart <= addr && addr <= ExtRAMEnd:
 		mmu.Cartridge.Write(addr, data)
+		return
 	case WRAMStart <= addr && addr <= EchoEnd:
 		if addr >= EchoStart {
 			addr -= EchoOffset
 		}
 		mmu.WRAM.Write(addr, data)
+		return
 	case OAMStart <= addr && addr <= OAMEnd:
 		mmu.GPU.Write(addr, data)
+		return
 	case HRAMStart <= addr && addr <= HRAMEnd:
 		mmu.HRAM.Write(addr, data)
+		return
 	}
 }
 

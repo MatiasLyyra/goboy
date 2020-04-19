@@ -1,7 +1,6 @@
 package goboy
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -28,8 +27,8 @@ const (
 
 type Sprite struct {
 	ID     uint8
-	X      uint8
-	Y      uint8
+	X      int
+	Y      int
 	TileID uint8
 	Flags  uint8
 }
@@ -70,7 +69,12 @@ type Display struct {
 	spriteBuffer   [160 * 144]uint8
 }
 
-func (d *Display) Run(cycles int, sink chan<- [160 * 144]uint8) {
+func (d *Display) Run(cycles int) bool {
+	lcdc := d.mmu.registers[AddrLCDC]
+	if lcdc.Get()&(1<<7) == 0 {
+		return false
+	}
+	var hasDrawn bool
 	var (
 		lcdcStat = d.mmu.registers[AddrLCDCStat]
 		ifReg    = d.mmu.registers[AddrIF]
@@ -86,9 +90,9 @@ func (d *Display) Run(cycles int, sink chan<- [160 * 144]uint8) {
 		// Set Coincidence flag
 		lcdcStat.RawSet(setBit(lcdcStat.Get(), 2))
 		// Request LCD STAT interrupt if Coincidence Interrupts are enabled
-		if lcdcStat.Get()&(1<<6) != 0 {
-			ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
-		}
+		// if lcdcStat.Get()&(1<<6) != 0 {
+		ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
+		// }
 	} else {
 		// Unset coincidence flag
 		lcdcStat.RawSet(resetBit(lcdcStat.Get(), 2))
@@ -102,28 +106,34 @@ func (d *Display) Run(cycles int, sink chan<- [160 * 144]uint8) {
 		}
 		if currentMode != ModeVBlank {
 			lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | ModeVBlank)
-			if lcdcStat.Get()&(1<<4) != 0 {
-				ifReg.RawSet(setBit(ifReg.Get(), VBlankInt))
-			}
-			sink <- d.spriteBuffer
+			// if lcdcStat.Get()&(1<<4) != 0 {
+			ifReg.RawSet(setBit(ifReg.Get(), VBlankInt))
+			// }
+			currentMode = ModeVBlank
+			hasDrawn = true
 		}
 	} else if rowCycles < OAMDuration {
 		if currentMode != ModeOAM {
 			lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | ModeOAM)
 			// Request LCD STAT interrupt if OAM Interrupts are enabled
-			if lcdcStat.Get()&(1<<5) != 0 {
-				ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
-			}
+			// if lcdcStat.Get()&(1<<5) != 0 {
+			ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
+			// }
+			currentMode = ModeOAM
 		}
 	} else if rowCycles < OAMDuration+TransferDuration {
 		if currentMode != ModeTransfer {
 			lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | ModeTransfer)
+			currentMode = ModeTransfer
 		}
 	} else {
 		if currentMode != ModeHBlank {
+			currentMode = ModeHBlank
 			lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | ModeHBlank)
 			var (
-				bgp = d.mmu.registers[AddrBGP].Get()
+				bgp  = d.mmu.registers[AddrBGP].Get()
+				obp0 = d.mmu.registers[AddrOBP0].Get()
+				obp1 = d.mmu.registers[AddrOBP1].Get()
 			)
 			// Start of HBlank, draw row into screen buffer
 			// Request LCD STAT interrupt if HBlank Interrupts are enabled
@@ -134,15 +144,26 @@ func (d *Display) Run(cycles int, sink chan<- [160 * 144]uint8) {
 			d.bgPalette[1] = (bgp & (3 << 2)) >> 2
 			d.bgPalette[2] = (bgp & (3 << 4)) >> 4
 			d.bgPalette[3] = (bgp & (3 << 6)) >> 6
+
+			d.spritePalettes[0][1] = (obp0 & (3 << 2)) >> 2
+			d.spritePalettes[0][2] = (obp0 & (3 << 4)) >> 4
+			d.spritePalettes[0][3] = (obp0 & (3 << 6)) >> 6
+
+			d.spritePalettes[1][1] = (obp1 & (3 << 2)) >> 2
+			d.spritePalettes[1][2] = (obp1 & (3 << 4)) >> 4
+			d.spritePalettes[1][3] = (obp1 & (3 << 6)) >> 6
+
 			d.drawBackground(row)
-			// d.drawSpriteRow(row)
-			if lcdcStat.Get()&(1<<3) != 0 {
-				ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
-			}
+			d.drawSpriteRow(row)
+			// if lcdcStat.Get()&(1<<3) != 0 {
+			ifReg.RawSet(setBit(ifReg.Get(), LCDStatInt))
+			// }
 			// sink <- d.spriteBuffer
 		}
 	}
+	lcdcStat.RawSet((lcdcStat.Get() & ^uint8(0x3)) | currentMode)
 	ly.RawSet(uint8(row))
+	return hasDrawn
 }
 
 func (d *Display) Read(addr uint16) uint8 {
@@ -190,7 +211,7 @@ outer:
 		tileID := tileData[tileY*32+tileX]
 		tile := d.GetTile(tileID, false)
 		tileRowStart := ((row) % 8) * 2
-		pixels := getPixelRow([2]uint8{tile[tileRowStart], tile[tileRowStart+1]})
+		pixels := getPixelRow([2]uint8{tile[tileRowStart], tile[tileRowStart+1]}, false)
 		for _, val := range pixels {
 			d.spriteBuffer[row*160+i] = d.bgPalette[val]
 
@@ -204,6 +225,7 @@ outer:
 		}
 	}
 }
+
 func (d *Display) drawSpriteRow(row int) {
 	var spriteHeight int = 8
 	var longSprites = d.mmu.registers[AddrLCDC].Get()&(1<<2) != 0
@@ -214,8 +236,8 @@ func (d *Display) drawSpriteRow(row int) {
 	}
 	// Filter sprites that are visible in the current scanline
 	sprites := d.FilterSprites(func(sprite Sprite) bool {
-		top := int(sprite.Y) - spriteHeight
-		lower := int(sprite.Y)
+		top := int(sprite.Y)
+		lower := int(sprite.Y) + spriteHeight
 		return top <= row && row < lower
 	})
 	// Sort sprites according to their X values
@@ -229,46 +251,64 @@ func (d *Display) drawSpriteRow(row int) {
 		sprite := sprites[i]
 		// TODO: Sprite mirroring
 		tileID := sprite.TileID
+		xMirror := sprite.Flags&(1<<5) != 0
+		yMirror := sprite.Flags&(1<<6) != 0
 		if longSprites {
 			// Check if we are drawing upper or lower portion of the sprite
-			if row < int(sprite.Y)-8 {
-				tileID &= 0xFE
+			if yMirror {
+				if row >= int(sprite.Y)+8 {
+					tileID &= 0xFE
+				} else {
+					tileID |= 0x01
+				}
 			} else {
-				tileID |= 0x01
+				if row < int(sprite.Y)+8 {
+					tileID &= 0xFE
+				} else {
+					tileID |= 0x01
+				}
 			}
+
 		}
 		tile := d.GetTile(tileID, true)
 		tileRowStart := ((row - (int(sprite.Y) - 16)) % 8) * 2
 		// Check flag bit 7 if we are drawing sprite always above bg
 		aboveBG := sprite.Flags&(1<<7) == 0
 		spritePaletteID := (sprite.Flags & (1 << 4)) >> 4
-		if len(tile) != 16 || tileRowStart < 0 {
-			// TODO: Remove this debug sanity check
-			panic("Invalid tile length")
-		}
-		pixels := getPixelRow([2]uint8{tile[tileRowStart], tile[tileRowStart+1]})
-		for i, pixelVal := range pixels {
-			pixelX := int(sprite.X) - 8 + i
-			idx := row*144 + pixelX
 
+		// fmt.Println(tileRowStart)
+		if yMirror {
+			tileRowStart = 14 - tileRowStart
+		}
+		pixels := getPixelRow([2]uint8{tile[tileRowStart], tile[tileRowStart+1]}, xMirror)
+		for i, pixelVal := range pixels {
+			pixelX := int(sprite.X) + i
+			idx := row*160 + pixelX
+			if pixelX < 0 || pixelX >= 160 {
+				continue
+			}
 			// Check if that we aren't drawing above another sprite that was already drawn
-			if d.priorityBuffer[pixelX] != prioSprite && (aboveBG || d.priorityBuffer[pixelX] == prioUndrawn) && pixelX < 160 {
+			if d.priorityBuffer[pixelX] != prioSprite && (aboveBG || d.priorityBuffer[pixelX] == prioUndrawn) {
 				if pixelVal != 0 {
-					fmt.Printf("Pixel val: %d\n", pixelVal)
 					d.priorityBuffer[pixelX] = prioSprite
+					d.spriteBuffer[idx] = d.spritePalettes[spritePaletteID][pixelVal]
 				}
-				d.spriteBuffer[idx] = d.spritePalettes[spritePaletteID][pixelVal]
 			}
 		}
 	}
 }
 
-func getPixelRow(rawTileRow [2]uint8) (pixels [8]uint8) {
+func getPixelRow(rawTileRow [2]uint8, mirror bool) (pixels [8]uint8) {
+
 	tileRow1, tileRow2 := rawTileRow[0], rawTileRow[1]
 	for i := 0; i < 8; i++ {
-		pixels[i] = (tileRow1 & (1 << (7 - i))) >> (7 - i)
-		pixels[i] = (tileRow2 & (1 << (7 - i))) >> (7 - i) << 1
-		pixels[i] &= 3
+		idx := i
+		if mirror {
+			idx = 7 - i
+		}
+		pixels[idx] = (tileRow1 & (1 << (7 - i))) >> (7 - i)
+		pixels[idx] |= (tileRow2 & (1 << (7 - i))) >> (7 - i) << 1
+		// pixels[i] &= 3
 	}
 	return
 }
@@ -310,8 +350,8 @@ func (d *Display) GetSprite(id int) Sprite {
 	spriteData := d.oam[startAddr : startAddr+4]
 	return Sprite{
 		ID:     uint8(id),
-		X:      spriteData[0],
-		Y:      spriteData[1],
+		Y:      int(spriteData[0]) - 16,
+		X:      int(spriteData[1]) - 8,
 		TileID: spriteData[2],
 		Flags:  spriteData[3],
 	}
@@ -326,4 +366,8 @@ func (d *Display) FilterSprites(filterFunc func(Sprite) bool) []Sprite {
 		}
 	}
 	return sprites
+}
+
+func (d *Display) ScreenBuffer() []uint8 {
+	return d.spriteBuffer[:]
 }

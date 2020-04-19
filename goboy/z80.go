@@ -1,5 +1,7 @@
 package goboy
 
+import "fmt"
+
 // CPU represents internal state of the z80 cpu
 type CPU struct {
 	// General purpose registers
@@ -29,7 +31,8 @@ type CPU struct {
 	EI     bool
 	Memory *MMU
 
-	Timer int
+	Timer    int
+	DivTimer int
 }
 
 func (cpu *CPU) HandleInterrupts() bool {
@@ -50,13 +53,17 @@ func (cpu *CPU) HandleInterrupts() bool {
 			switch i {
 			case VBlankInt:
 				intVector = 0x40
+				fmt.Println("VBlank")
 			case LCDStatInt:
 				intVector = 0x48
+				fmt.Println("LCDStatInt")
 			case TimerInt:
 				intVector = 0x50
+				fmt.Println("TimerInt")
 			case SerialInt:
 				intVector = 0x58
 			case JoypadInt:
+				fmt.Println("JoypadInt")
 				intVector = 0x60
 			}
 			cpu.Memory.Write(cpu.SP-1, uint8(cpu.PC>>8))
@@ -84,6 +91,7 @@ func (cpu *CPU) RunSingleOpcode() int {
 
 func (cpu *CPU) updateTimers(cycles int) {
 	var (
+		div   = cpu.Memory.registers[AddrDIV]
 		tima  = cpu.Memory.registers[AddrTIMA]
 		tma   = cpu.Memory.registers[AddrTMA]
 		tac   = cpu.Memory.registers[AddrTAC]
@@ -91,6 +99,10 @@ func (cpu *CPU) updateTimers(cycles int) {
 	)
 	tacVal := tac.Get()
 	// Timer is not enabled
+	cpu.DivTimer += cycles
+	divCount := cpu.DivTimer / 256
+	cpu.DivTimer -= divCount * 256
+	div.RawSet(div.Get() + uint8(divCount))
 	if tacVal&0x04 == 0 {
 		return
 	}

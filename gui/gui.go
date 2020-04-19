@@ -51,19 +51,19 @@ func (w *Window) Close() {
 	}
 }
 
-func (w *Window) Draw(buffer [160 * 144]uint8) {
+func (w *Window) Draw(buffer []uint8) {
 	for i, val := range buffer {
 		y := i / 160
 		x := i % 160
 		switch val {
 		case ColorBlack:
-			w.renderer.SetDrawColor(0x00, 0x00, 0x00, 255)
+			w.renderer.SetDrawColor(0x0f, 0x38, 0x0f, 255)
 		case ColorDarkGray:
-			w.renderer.SetDrawColor(0x55, 0x55, 0x55, 255)
+			w.renderer.SetDrawColor(0x30, 0x62, 0x30, 255)
 		case ColorLightGray:
-			w.renderer.SetDrawColor(0xAA, 0xAA, 0xAA, 255)
+			w.renderer.SetDrawColor(0x8b, 0xac, 0x0f, 255)
 		case ColorWhite:
-			w.renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 255)
+			w.renderer.SetDrawColor(0x9b, 0xbc, 0x0f, 255)
 		}
 		w.renderer.DrawPoint(int32(x), int32(y))
 	}

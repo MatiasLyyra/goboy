@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/MatiasLyyra/goboy/goboy"
 )
 
 func StartDebugger(d Debugger, sink chan<- [160 * 144]uint8) {
@@ -44,11 +46,43 @@ func StartDebugger(d Debugger, sink chan<- [160 * 144]uint8) {
 			}
 			printSnippet(d, decoded, lookup)
 		case "read":
+			if len(options) == 0 {
+				continue
+			}
 			val, err := strconv.ParseInt(options[0], 16, 64)
-			if err != nil && val < (1<<16) {
+			if err != nil || val >= (1<<16) {
 				fmt.Println("invalid value")
 			} else {
 				fmt.Printf("%02X\n", d.CPU.Memory.Read(uint16(val)))
+			}
+		case "write":
+			if len(options) < 2 {
+				continue
+			}
+			addr, err := strconv.ParseInt(options[0], 16, 64)
+			if err != nil || addr >= (1<<16) {
+				fmt.Println("invalid addr")
+				continue
+			}
+			val, err := strconv.ParseInt(options[1], 16, 64)
+			if err != nil || val >= (1<<8) {
+				fmt.Println("invalid value")
+				continue
+			}
+			d.CPU.Memory.Write(uint16(addr), uint8(val))
+		case "mbc1":
+			mbc1, ok := d.CPU.Memory.Cartridge.MBC.(*goboy.MBC1)
+			if len(options) == 0 || !ok {
+				if !ok {
+					fmt.Println("Not MBC1")
+				}
+				continue
+			}
+			switch options[0] {
+			case "rom":
+				fmt.Printf("Selected rom bank: %d\n", mbc1.SelectedROM())
+			case "ram":
+				fmt.Printf("Selected ram bank: %d\n", mbc1.SelectedRAM())
 			}
 		case "quit":
 			os.Exit(0)

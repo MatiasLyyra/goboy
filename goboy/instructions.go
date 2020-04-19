@@ -1690,7 +1690,7 @@ func init() {
 			cpu.EI = true
 			cpu.PC = uint16(cpu.Memory.Read(cpu.SP+1))<<8 | uint16(cpu.Memory.Read(cpu.SP))
 			cpu.SP += 2
-			return 20
+			return 16
 		},
 		// 0xDA: JP C, a16
 		func(cpu *CPU) int {
@@ -1885,7 +1885,7 @@ func init() {
 			cpu.FHalfCarry = false
 			cpu.FCarry = false
 			cpu.PC++
-			return 4
+			return 8
 		},
 		// 0xF7: RST 30H
 		func(cpu *CPU) int {
@@ -1948,7 +1948,7 @@ func init() {
 			cpu.Memory.Write(cpu.SP-2, uint8(cpu.PC))
 			cpu.SP -= 2
 			cpu.PC = 0x38
-			return 4
+			return 16
 		},
 	}
 }
